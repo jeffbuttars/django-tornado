@@ -5,6 +5,7 @@ from tornado.ioloop import IOLoop
 class ttask(object):
 
     """Docstring for ttask """
+    __name__ = "ttask"
 
     def __init__(self, *args, **kwargs):
         """When this gets more advance we can use this to setup
