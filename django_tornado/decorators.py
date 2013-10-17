@@ -43,7 +43,7 @@ class ttask(object):
             :rtype:
             """
 
-            return IOLoop.current().add_callback(func, args, kwargs)
+            return IOLoop.current().add_callback(func, *args, **kwargs)
         # decorated()
 
         return decorated
