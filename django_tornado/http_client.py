@@ -2,70 +2,88 @@ import logging
 logger = logging.getLogger('django')
 
 import tornado
-from tornado.httpclient import HTTPClient, AsyncHTTPClient, HTTPError
+import tornado.ioloop
+from tornado.httpclient import AsyncHTTPClient
 from tornado.httputil import url_concat
-from urllib.parse import urlencode
+# from urllib.parse import urlencode
 
 
-# class HttpClient(HTTPClient):
-#     """Docstring for HttpClient """
+"""
+This is a 'smart' HTTPClient wrapper that also makes requests
+a bit simpler by borrowing much from the 'requests' module.
 
-#     def get(self, url, params, *kwargs):
-#         """todo: Docstring for get
+If a tornado IOLoop is running, then async requests are made.
+Otherwise, tornado's run_sync() method is used to make the
+calls synchronous.
+"""
 
-#         :param url: arg description
-#         :type url: type description
-#         :param kwargs: arg description
-#         :type kwargs: type description
-#         :return:
-#         :rtype:
-#         """
 
-#         if params:
-#             url = url_concat(url, params)
+class HttpClient(object):
+    """Docstring for HttpClient """
 
-#         return self.fetch(url, method='GET', *kwargs)
-#     #get()
+    def __init__(self):
+        """todo: to be defined """
 
-#     def post(self, url, data=None, params=None, *kwargs):
-#         """todo: Docstring for post
+        self._ioloop = tornado.ioloop.IOLoop.current()
+        self._hc = AsyncHTTPClient()
 
-#         :param url: arg description
-#         :type url: type description
-#         :param *kwargs: arg description
-#         :type *kwargs: type description
-#         :return:
-#         :rtype:
-#         """
+    #__init__()
 
-#         if params:
-#             url = url_concat(url, params)
+    def get(self, url, params=None, **kwargs):
+        """GET wrapper. Always returns a future.
 
-#         if data:
-#             kwargs['body'] = tornado.escape.url_escape(data)
+        :param url: arg description
+        :type url: type description
+        :param kwargs: arg description
+        :type kwargs: type description
+        :return:
+        :rtype:
+        """
 
-#         return self.fetch(url, method='POST', *kwargs)
-#     #post()
+        if params:
+            url = url_concat(url, params)
 
-#     def post_json(self, url, data, params=None, *kwargs):
-#         """todo: Docstring for post_json
+        return self._hc.fetch(url, method='GET', **kwargs)
+    #get()
 
-#         :param url: arg description
-#         :type url: type description
-#         :param data: arg description
-#         :type data: type description
-#         :param params: arg description
-#         :type params: type description
-#         :param *kwargs: arg description
-#         :type *kwargs: type description
-#         :return:
-#         :rtype:
-#         """
-#         return self.post(url,
-#                          data=tornado.escape.json_encode(data),
-#                          params=params,
-#                          headers={'Content-Type': 'application/json'},
-#                          )
-#     #post_json()
-# #HttpClient
+    def post(self, url, data=None, params=None, **kwargs):
+        """todo: Docstring for post
 
+        :param url: arg description
+        :type url: type description
+        :param *kwargs: arg description
+        :type *kwargs: type description
+        :return:
+        :rtype:
+        """
+
+        if params:
+            url = url_concat(url, params)
+
+        if data:
+            kwargs['body'] = tornado.escape.url_escape(data)
+
+        return self.fetch(url, method='POST', **kwargs)
+    #post()
+
+    def post_json(self, url, data, params=None, *kwargs):
+        """todo: Docstring for post_json
+
+        :param url: arg description
+        :type url: type description
+        :param data: arg description
+        :type data: type description
+        :param params: arg description
+        :type params: type description
+        :param *kwargs: arg description
+        :type *kwargs: type description
+        :return:
+        :rtype:
+        """
+        return self.post(url,
+                         data=tornado.escape.json_encode(data),
+                         params=params,
+                         headers={'Content-Type': 'application/json'},
+                         )
+    #post_json()
+#HttpClient

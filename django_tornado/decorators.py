@@ -1,10 +1,14 @@
+import logging
+logger = logging.getLogger('django')
+
 import functools
 from tornado.ioloop import IOLoop
 
 
 class ttask(object):
 
-    """Docstring for ttask """
+    """Run a task as a tornado callback. Greate for async background code.
+    If tornado is not running, then things are run synchronously."""
     __name__ = "ttask"
 
     def __init__(self, *args, **kwargs):
@@ -32,6 +36,9 @@ class ttask(object):
         :rtype:
         """
 
+        logger.debug(
+            "ttask decorate, IOLoop is running? %s", IOLoop.current()._running)
+
         @functools.wraps(func)
         def decorated(self, *args, **kwargs):
             """todo: Docstring for decorated
@@ -43,10 +50,22 @@ class ttask(object):
             :return:
             :rtype:
             """
-
             return IOLoop.current().add_callback(func, args, kwargs)
         # decorated()
 
+        @functools.wraps(func)
+        def sync_decorated(self, *args, **kwargs):
+            """Run the function synchronously
+            """
+            return IOLoop.current().run_sync(
+                functools.partial(func, *args, **kwargs))
+        # decorated()
+
+        if not IOLoop.current()._running:
+            logger.debug("ttask running %s sync", func)
+            return sync_decorated
+
+        logger.debug("ttask running %s async", func)
         return decorated
     #__call__()
 # ttask
