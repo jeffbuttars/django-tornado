@@ -61,12 +61,12 @@ class HttpClient(object):
             url = url_concat(url, params)
 
         if data:
-            kwargs['body'] = tornado.escape.url_escape(data)
+            kwargs['body'] = data
 
-        return self.fetch(url, method='POST', **kwargs)
+        return self._hc.fetch(url, method='POST', **kwargs)
     #post()
 
-    def post_json(self, url, data, params=None, *kwargs):
+    def post_json(self, url, data, params=None, **kwargs):
         """todo: Docstring for post_json
 
         :param url: arg description
@@ -80,10 +80,19 @@ class HttpClient(object):
         :return:
         :rtype:
         """
+
+        headers = {'Content-Type': 'application/json'}
+        if 'headers' in kwargs:
+            headers.update(kwargs['headers'])
+
+        kwargs['headers'] = headers
+
+        logger.debug("POST url: %s, headers: %s, data: %s", url, headers, data)
+
         return self.post(url,
                          data=tornado.escape.json_encode(data),
                          params=params,
-                         headers={'Content-Type': 'application/json'},
+                         **kwargs
                          )
     #post_json()
 #HttpClient

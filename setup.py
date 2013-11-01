@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='django-tornado',
-      version='1.0.4',
+      version='1.1.0',
       description="Django/Tornado integration made easy.",
       author="Jeff Buttars",
       author_email="jeffbuttars@gmail.com",
