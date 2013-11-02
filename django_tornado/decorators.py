@@ -60,16 +60,22 @@ class ttask(object):
 
         logger.debug("ttask running %s async", func)
 
+        if self._deadline:
+            @functools.wraps(func)
+            def deadline_decorated(self, *args, **kwargs):
+                """Schedule the task as a timeout.
+                """
+                return IOLoop.current().add_timeout(
+                    self._deadline,
+                    functools.partial(func, *args, **kwargs)
+                )
+            # deadline_decorated()
+
+            return deadline_decorated
+
         @functools.wraps(func)
         def decorated(self, *args, **kwargs):
             """todo: Docstring for decorated
-
-            :param *args: arg description
-            :type *args: type description
-            :param **kwargs: arg description
-            :type **kwargs: type description
-            :return:
-            :rtype:
             """
             return IOLoop.current().add_callback(func, args, kwargs)
         # decorated()
