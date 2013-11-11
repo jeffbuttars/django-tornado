@@ -12,7 +12,7 @@ class ttask(object):
     If tornado is not running, then things are run synchronously."""
     __name__ = "ttask"
 
-    def __init__(self, *args, deadline=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         """When this gets more advance we can use this to setup
         more complicated features such as distributting to a true
         task service.
@@ -28,7 +28,7 @@ class ttask(object):
         self._args = args
         self._kwargs = kwargs
 
-        self._deadline = deadline
+        self._deadline = kwargs.get('deadline')
     #__init__()
 
     def __call__(self, func):
