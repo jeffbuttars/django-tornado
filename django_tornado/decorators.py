@@ -66,7 +66,9 @@ class ttask(object):
             :return:
             :rtype:
             """
-            return IOLoop.current().add_callback(func, args, kwargs)
+            # logger.debug(
+            #     "Adding ttask %s to callback Q, args: %s, kwargs: %s", func, args, kwargs)
+            return IOLoop.current().add_callback(func, *args, **kwargs)
         # decorated()
 
         return decorated
@@ -76,7 +78,7 @@ class ttask(object):
 
 class ctask(object):
 
-    """Run a task as a tornado callback. Greate for async background code.
+    """Run a task as a tornado callback. Great for async background code.
     If tornado is not running, then things are run synchronously.
     ctask will run the tornado.gen.coroutine on the decorated function before
     it's decorated with ctask. This is equivelant to decorting a function with
