@@ -49,7 +49,7 @@ class ttask(object):
             logger.debug("ttask running %s sync", func)
 
             @functools.wraps(func)
-            def sync_decorated(self, *args, **kwargs):
+            def sync_decorated(*args, **kwargs):
                 """Run the function synchronously
                 """
                 return IOLoop.current().run_sync(
@@ -62,7 +62,7 @@ class ttask(object):
 
         if self._deadline:
             @functools.wraps(func)
-            def deadline_decorated(self, *args, **kwargs):
+            def deadline_decorated(*args, **kwargs):
                 """Schedule the task as a timeout.
                 """
                 return IOLoop.current().add_timeout(
@@ -74,7 +74,7 @@ class ttask(object):
             return deadline_decorated
 
         @functools.wraps(func)
-        def decorated(self, *args, **kwargs):
+        def decorated(*args, **kwargs):
             """todo: Docstring for decorated
             """
             # logger.debug(
