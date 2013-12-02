@@ -3,7 +3,7 @@ logger = logging.getLogger('django')
 
 import tornado
 import tornado.ioloop
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient as SyncHttpClient
 from tornado.httputil import url_concat
 # from urllib.parse import urlencode
 
@@ -21,12 +21,15 @@ calls synchronous.
 class HttpClient(object):
     """Docstring for HttpClient """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """todo: to be defined """
 
         self._ioloop = tornado.ioloop.IOLoop.current()
-        self._hc = AsyncHTTPClient()
 
+        if self._ioloop._running:
+            self._hc = AsyncHTTPClient(*args, **kwargs)
+        else:
+            self._hc = SyncHttpClient(*args, **kwargs)
     #__init__()
 
     def get(self, url, params=None, **kwargs):
