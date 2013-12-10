@@ -32,6 +32,14 @@ class HttpClient(object):
             self._hc = SyncHttpClient(*args, **kwargs)
     #__init__()
 
+    @classmethod
+    def configure(cls, impl, **kwargs):
+        if tornado.ioloop.IOLoop.current()._running:
+            AsyncHTTPClient.configure(impl, **kwargs)
+        else:
+            SyncHttpClient.configure(impl, **kwargs)
+    #configure()
+
     def get(self, url, params=None, **kwargs):
         """GET wrapper. Always returns a future.
 
