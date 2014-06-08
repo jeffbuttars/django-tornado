@@ -1,2 +1,5 @@
-Django==1.6.5
+Django==1.7b4
+backports.ssl-match-hostname==3.4.0.2
+django-tornado==1.1.6
+tornado==3.2.2
 wsgiref==0.1.2
