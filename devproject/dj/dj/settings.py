@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+PROJECT_NAME = 'dj'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
@@ -22,7 +23,7 @@ SECRET_KEY = '^n%8c*kis1594axpst%o#ihebn@6b-*rd0+gbw1bu2silu73!8'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = DEBUG
 
 ALLOWED_HOSTS = []
 
@@ -80,3 +81,70 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': ('%(asctime)s %(levelname)s:%(process)s '
+                       '%(filename)s:%(lineno)s %(module)s::'
+                       '%(funcName)s() %(message)s'),
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        }
+    },
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        # 'file_all': {
+        #     'level': 'DEBUG',
+        #     'class': 'logging.FileHandler',
+        #     'formatter': 'verbose',
+        #     'filename': _log_dir + '/django.log',
+        # },
+    },
+    'loggers': {
+
+        'django': {
+            # 'handlers': ['console', 'file_all'],
+            'handlers': ['console'],
+            # 'level': (DEBUG and 'DEBUG') or 'INFO',
+            'level': 'ERROR',
+            'propagate': True,
+        },
+
+        'django.request': {
+            # 'handlers': ['mail_admins', 'console', 'file_all'],
+            # 'handlers': ['mail_admins', 'console'],
+            'handlers': ['console'],
+            # 'level': (DEBUG and 'DEBUG') or 'ERROR',
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.debug': {
+            'handlers': ['console', 'file_all'],
+            'handlers': ['console'],
+            # 'level': (DEBUG and 'DEBUG') or 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        PROJECT_NAME: {
+            # 'handlers': ['console', 'file_all'],
+            'handlers': ['console'],
+            'level': (DEBUG and 'DEBUG') or 'INFO',
+            'propagate': True,
+        }
+    }
+}

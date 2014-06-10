@@ -1,6 +1,6 @@
 import logging
 # logger = logging.getLogger('django.request')
-logger = logging.getLogger('dj')
+logger = logging.getLogger('django.debug')
 
 import sys
 import cgi
@@ -196,6 +196,7 @@ class TornadoHandler(base.BaseHandler):
         :return:
         :rtype:
         """
+        logger.debug("TornadoHandler __call__ %s", t_req)
 
         # Set up middleware if needed. We couldn't do this earlier, because
         # settings weren't available.
@@ -234,6 +235,11 @@ class TornadoHandler(base.BaseHandler):
             response_headers.append((str('Set-Cookie'), str(c.output(header=''))))
 
         # start_response(force_str(status), response_headers)
+        print("TornadoHandler __call__ status: %s\n response_headers: %s" % (
+            force_str(status), response_headers))
+        print("TornadoHandler __call__ response %s" % (dir(response)))
+        print("TornadoHandler __call__ response %s" % (response))
+
         return response
     # __call__()
 
@@ -347,17 +353,19 @@ class DjangoApplication(tornado.web.Application):
             transforms,
             settings)
         print(
-            "__init__(self, %s, %s, %s, %s)" % (
+            "DjangoApplication::__init__(self, %s, %s, %s, %s)" % (
             handlers,
             default_host,
             transforms,
             settings))
 
+        self._app_handler = TornadoHandler
+
         super(DjangoApplication, self).__init__(
             handlers=handlers,
             default_host=default_host,
             transforms=transforms, settings=settings)
-        self._app_handler = TornadoHandler
+
 
         # if transforms is None:
         #     self.transforms = []
@@ -515,6 +523,7 @@ class DjangoApplication(tornado.web.Application):
 
     def start_request(self, connection):
         logging.debug("start_request(self, %s)", connection)
+        print("start_request(self, %s)" % connection)
         return super(DjangoApplication, self).start_request(connection)
         # # Modern HTTPServer interface
         # return _RequestDispatcher(self, connection)
@@ -524,8 +533,10 @@ class DjangoApplication(tornado.web.Application):
         print("__call__(self, %s)" % request)
 
         hdlr = self._app_handler()
-        hdlr(request)
-        return super(DjangoApplication, self).__call__(request)
+        res = hdlr(request)
+
+        print("DjangoApplication::__call__ result" % res)
+        # return super(DjangoApplication, self).__call__(request)
         # # Legacy HTTPServer interface
         # dispatcher = _RequestDispatcher(self, None)
         # dispatcher.set_request(request)
