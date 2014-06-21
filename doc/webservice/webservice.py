@@ -16,9 +16,33 @@ logger.addHandler(logger_ch)
 
 access_log = logger
 
+access_log = logging.getLogger("tornado.access")
+access_log.setLevel(logging.DEBUG)
+access_log.addHandler(logger_ch)
+
+app_log = logging.getLogger("tornado.application")
+app_log.setLevel(logging.DEBUG)
+app_log.addHandler(logger_ch)
+
+gen_log = logging.getLogger("tornado.general")
+gen_log.setLevel(logging.DEBUG)
+gen_log.addHandler(logger_ch)
+
+import sys
+import os
+
+# make sure 'our' tornado and django is picked up first.
+this_dir = os.path.realpath(os.path.dirname(__file__))
+# sys.path.insert(1, os.path.join(this_dir, 'django'))
+sys.path.insert(1, os.path.join(this_dir, 'tornado'))
+print(sys.path)
+# sys.meta_path.insert(0, sys.meta_path.pop(-1))
+# print(sys.meta_path)
+
 import tornado.httpserver
 import tornado.ioloop
 from tornado import httputil
+from tornado.util import bytes_type, u
 
 # logger.debug("%s", dir(httputil))
 # class HttpServerHandler(httputil.HTTPServerConnectionDelegate):
@@ -149,6 +173,7 @@ from tornado import httputil
 # # HttpServerHandler
 # logger.debug("%s::", self,)
 
+
 class HttpServerHandler(object):
     """Docstring for HttpServerHandler """
 
@@ -160,7 +185,7 @@ class HttpServerHandler(object):
         :param **kwargs: arg description
         :type **kwargs: type description
         """
-        logger.debug("%s::__init__", self, args, kwargs)
+        logger.debug("%s::__init__ args:%s, kwargs:%s", self, args, kwargs)
     # __init__()
 
     def __call__(self, request):
@@ -174,14 +199,15 @@ class HttpServerHandler(object):
         logger.debug("%s::__call__ request: %s", self, request)
         logger.debug("%s::__call__ dir(request): %s", self, dir(request))
         logger.debug("%s::__call__ dir(request.connection): %s", self, dir(request.connection))
+        logger.debug("bytes_type %s", bytes_type)
     
-        message = "You requested %s\n" % request.uri
-        request.write('HTTP/1.1 200 OK\r\n'),
-        request.write('Content-Length: %d\r\n\r\n%s' % (
-            len(message), message)
-        )
-
-        request.write(message)
+        # body = bytes("You requested %s\n" % request.uri, 'utf8')
+        # message = bytes('HTTP/1.1 200 OK\r\n', 'utf8')
+        # message += bytes('Content-Length: %d\r\n\r\n%s' % (len(body), body), 'utf8')
+        body = "You requested %s\n" % request.uri
+        message = "HTTP/1.1 200 OK\r\n"
+        message += "Content-Length: %d\r\n\r\n%s" % (len(body), body)
+        request.write(bytes(message, 'utf8'))
         request.finish()
     # __call__()
     
