@@ -3,12 +3,17 @@ import logging
 logger = logging.getLogger('django.debug')
 
 import sys
+# import platform
 import cgi
 import codecs
 import warnings
 from io import BytesIO
+# import time
+# import datetime
 
 import tornado.web
+# from tornado.escape import utf8
+# from tornado import httputil
 
 from django import http
 from django.core import signals
@@ -24,7 +29,7 @@ from django.utils.encoding import force_str, force_text
 
 
 # encode() and decode() expect the charset to be a native string.
-ISO_8859_1, UTF_8 = str('iso-8859-1'), str('utf-8')
+# ISO_8859_1, UTF_8 = str('iso-8859-1'), str('utf-8')
 
 
 class LimitedStream(object):
@@ -239,13 +244,14 @@ class TornadoHandler(base.BaseHandler):
             force_str(status), response_headers))
         print("TornadoHandler __call__ response %s" % (dir(response)))
         print("TornadoHandler __call__ response %s" % (response))
+        # print("TornadoHandler __call__ response serialize %s" % (response.serialize()))
 
         return response
     # __call__()
 
-    def get(self, *args, **kwargs):
-        logger.debug("TornadoHandler::get %s, %s", args, kwargs)
-    # get()
+    # def get(self, *args, **kwargs):
+    #     logger.debug("TornadoHandler::get %s, %s", args, kwargs)
+    # # get()
 # TornadoHandler
 
 
@@ -276,7 +282,8 @@ def get_script_name(t_req):
         script_name = t_req.headers.get('SCRIPT_NAME', '')
 
     # It'd be better to implement URI-to-IRI decoding, see #19508.
-    return script_name.decode(UTF_8)
+    # return script_name.decode(UTF_8)
+    return script_name
 
 
 def get_path_info(t_req):
@@ -286,296 +293,162 @@ def get_path_info(t_req):
     path_info = t_req.headers.get('PATH_INFO', '/')
 
     # It'd be better to implement URI-to-IRI decoding, see #19508.
-    return path_info.decode(UTF_8)
+    # return path_info.decode(UTF_8)
+    return path_info
+
+
+class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
+
+    def __init__(self, application, request, **kwargs):
+        logger.debug(("DjangoTornadoRequestHandler::__init__() "
+                      "application: %s, request: %s, kwargs: %s"),
+                     application, request, kwargs)
+        super(DjangoTornadoRequestHandler, self).__init__(application, request, **kwargs)
+
+        self._dj_handler = TornadoHandler()
+    # __init__()
+
+    # def _execute(self, transforms, *args, **kwargs):
+    #     logger.debug(("DjangoTornadoRequestHandler::_execute() "
+    #                  "transforms: %s, args: %s, kwargs: %s"),
+    #                  transforms, args, kwargs)
+
+    #     # return super(DjangoTornadoRequestHandler, self)._execute(transforms, *args, **kwargs)
+    #     self._transforms = transforms
+    #     try:
+    #         if self.request.method not in self.SUPPORTED_METHODS:
+    #             raise HTTPError(405)
+    #         self.path_args = [self.decode_argument(arg) for arg in args]
+    #         self.path_kwargs = dict((k, self.decode_argument(v, name=k))
+    #                                 for (k, v) in kwargs.items())
+    #         # If XSRF cookies are turned on, reject form submissions without
+    #         # the proper cookie
+    #         if self.request.method not in ("GET", "HEAD", "OPTIONS") and \
+    #                 self.application.settings.get("xsrf_cookies"):
+    #             self.check_xsrf_cookie()
+    #         self._when_complete(self.prepare(), self._execute_method)
+    #     except Exception as e:
+    #         self._handle_request_exception(e)
+    # # # _execute()
+
+    def _execute_method(self):
+        logger.debug("DjangoTornadoRequestHandler::_execute_method")
+        if not self._finished:
+            self._when_complete(self.django_handle_request(*self.path_args, **self.path_kwargs),
+                                self._execute_finish)
+
+    def django_handle_request(self, *args, **kwargs):
+        """todo: Docstring for django_handle_request
+
+        :param *args: arg description
+        :type *args: type description
+        :param **kwargs: arg description
+        :type **kwargs: type description
+        :return:
+        :rtype:
+        """
+
+        logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
+                      " args: %s, kwargs: %s"),
+                     args, kwargs)
+
+        # Now use the Django handler to run the request through Django
+        resp = self._dj_handler(self.request)
+
+        # Update the status with the Django staus
+        self.set_status(resp.status_code, resp.reason_phrase)
+
+        # Update the headers with the Django headers
+        for k, v in resp.items():
+            self.set_header(k, v)
+        # end for k, v in resp.items
+
+        # Write the Django generated content
+        self.write(resp.content)
+
+    # django_handle_request()
+# DjangoTornadoRequestHandler
 
 
 # Looks like we'll need our own version of the tornado web Application class
-# to do this well. The following is just a copy of current tornado source from
+# to do this well.
 # Sat Jun  7 19:36:09 2014
-# class Application(httputil.HTTPServerConnectionDelegate):
 class DjangoApplication(tornado.web.Application):
-    """A collection of request handlers that make up a web application.
 
-    Instances of this class are callable and can be passed directly to
-    HTTPServer to serve the application::
+    def __init__(self, *args, **kwargs):
+        """todo: to be defined
+        
+        :param *args: arg description
+        :type *args: type description
+        :param **kwargs: arg description
+        :type **kwargs: type description
+        """
+        logger.debug("DjangoApplication::__init__() args: %s, kwargs: %s",
+                     args, kwargs)
 
-        application = web.Application([
-            (r"/", MainPageHandler),
-        ])
-        http_server = httpserver.HTTPServer(application)
-        http_server.listen(8080)
-        ioloop.IOLoop.instance().start()
+        # self._django_req_cls = DjangoTornadoRequestHandler
+        # _django_app_ref = self
+        def _fallback_wrapper(request, *args, **kwargs):
+            logger.debug("_fallback_wrapper app:%s, request: %s, kwargs: %s",
+                         self, request, kwargs)
+            return DjangoTornadoRequestHandler(self, request, **kwargs)
+        # _fallback_wrapper()
 
-    The constructor for this class takes in a list of `URLSpec` objects
-    or (regexp, request_class) tuples. When we receive requests, we
-    iterate over the list in order and instantiate an instance of the
-    first request class whose regexp matches the request path.
-    The request class can be specified as either a class object or a
-    (fully-qualified) name.
-
-    Each tuple can contain additional elements, which correspond to the
-    arguments to the `URLSpec` constructor.  (Prior to Tornado 3.2, this
-    only tuples of two or three elements were allowed).
-
-    A dictionary may be passed as the third element of the tuple,
-    which will be used as keyword arguments to the handler's
-    constructor and `~RequestHandler.initialize` method.  This pattern
-    is used for the `StaticFileHandler` in this example (note that a
-    `StaticFileHandler` can be installed automatically with the
-    static_path setting described below)::
-
-        application = web.Application([
-            (r"/static/(.*)", web.StaticFileHandler, {"path": "/var/www"}),
-        ])
-
-    We support virtual hosts with the `add_handlers` method, which takes in
-    a host regular expression as the first argument::
-
-        application.add_handlers(r"www\.myhost\.com", [
-            (r"/article/([0-9]+)", ArticleHandler),
-        ])
-
-    You can serve static files by sending the ``static_path`` setting
-    as a keyword argument. We will serve those files from the
-    ``/static/`` URI (this is configurable with the
-    ``static_url_prefix`` setting), and we will serve ``/favicon.ico``
-    and ``/robots.txt`` from the same directory.  A custom subclass of
-    `StaticFileHandler` can be specified with the
-    ``static_handler_class`` setting.
-
-    """
-    def __init__(self, handlers=None, default_host="", transforms=None,
-                 **settings):
-        logging.debug(
-            "__init__(self, %s, %s, %s, %s)",
-            handlers,
-            default_host,
-            transforms,
-            settings)
-        print(
-            "DjangoApplication::__init__(self, %s, %s, %s, %s)" % (
-            handlers,
-            default_host,
-            transforms,
-            settings))
-
-        self._app_handler = TornadoHandler
+        # Add our Django handlers
+        self._django_handlers = [
+            # (r'%s(.*)' % settings.STATIC_URL,
+            #  tornado.web.StaticFileHandler, {'path': settings.STATIC_ROOT}),
+            (r'.*', DjangoTornadoRequestHandler),
+            # (r'.*',
+            #  tornado.web.FallbackHandler,
+            #  dict(fallback=_fallback_wrapper)),
+        ]
 
         super(DjangoApplication, self).__init__(
-            handlers=handlers,
-            default_host=default_host,
-            transforms=transforms, settings=settings)
+            self._django_handlers,
+            static_url_prefix=getattr(settings, 'STATIC_URL', ''),
+            static_path=getattr(settings, 'STATIC_ROOT', 'staticfiles'),
+            *args,
+            **kwargs)
+    # __init__()
 
+    # def __call__(self, request):
+    #     """todo: Docstring for __call__
+        
+    #     :param request: arg description
+    #     :type request: type description
+    #     :return:
+    #     :rtype:
+    #     """
+    #     logger.debug("DjangoApplication::__call__()request: %s", request)
+    #     # super(DjangoApplication, self).__call__(request)
 
-        # if transforms is None:
-        #     self.transforms = []
-        #     if settings.get("gzip"):
-        #         self.transforms.append(GZipContentEncoding)
-        # else:
-        #     self.transforms = transforms
-        # self.handlers = []
-        # self.named_handlers = {}
-        # self.default_host = default_host
-        # self.settings = settings
-        # self.ui_modules = {'linkify': _linkify,
-        #                    'xsrf_form_html': _xsrf_form_html,
-        #                    'Template': TemplateModule,
-        #                    }
-        # self.ui_methods = {}
-        # self._load_ui_modules(settings.get("ui_modules", {}))
-        # self._load_ui_methods(settings.get("ui_methods", {}))
-        # if self.settings.get("static_path"):
-        #     path = self.settings["static_path"]
-        #     handlers = list(handlers or [])
-        #     static_url_prefix = settings.get("static_url_prefix",
-        #                                      "/static/")
-        #     static_handler_class = settings.get("static_handler_class",
-        #                                         StaticFileHandler)
-        #     static_handler_args = settings.get("static_handler_args", {})
-        #     static_handler_args['path'] = path
-        #     for pattern in [re.escape(static_url_prefix) + r"(.*)",
-        #                     r"/(favicon\.ico)", r"/(robots\.txt)"]:
-        #         handlers.insert(0, (pattern, static_handler_class,
-        #                             static_handler_args))
-        # # if handlers:
-        # #     self.add_handlers(".*$", handlers)
+    #     return super(DjangoApplication, self).__call__(request)
 
-        # if self.settings.get('debug'):
-        #     self.settings.setdefault('autoreload', True)
-        #     self.settings.setdefault('compiled_template_cache', False)
-        #     self.settings.setdefault('static_hash_cache', False)
-        #     self.settings.setdefault('serve_traceback', True)
+    #     """Called by HTTPServer to execute the request."""
+    #     logger.debug("Application__call__:: request:%s", request)
 
-        # # Automatically reload modified modules
-        # if self.settings.get('autoreload'):
-        #     from tornado import autoreload
-        #     autoreload.start()
+    #     transforms = [t(request) for t in self.transforms]
 
-    def listen(self, port, address="", **kwargs):
-        logging.debug("listen(self, port, %s, %s)", address, kwargs)
-        return super(DjangoApplication, self).listen(port, address, **kwargs)
-        """Starts an HTTP server for this application on the given port.
+    #     handler_args = self.settings.get(
+    #         'default_handler_args', {})
+    #     handler = self._django_req_cls(self, request, **handler_args)
 
-        This is a convenience alias for creating an `.HTTPServer`
-        object and calling its listen method.  Keyword arguments not
-        supported by `HTTPServer.listen <.TCPServer.listen>` are passed to the
-        `.HTTPServer` constructor.  For advanced uses
-        (e.g. multi-process mode), do not use this method; create an
-        `.HTTPServer` and call its
-        `.TCPServer.bind`/`.TCPServer.start` methods directly.
+    #     # # If template cache is disabled (usually in the debug mode),
+    #     # # re-compile templates and reload static files on every
+    #     # # request so you don't need to restart to see changes
+    #     # gen_log.debug("Application__call__:: handler template cache")
+    #     # if not self.settings.get("compiled_template_cache", True):
+    #     #     with RequestHandler._template_loader_lock:
+    #     #         for loader in RequestHandler._template_loaders.values():
+    #     #             loader.reset()
+    #     # if not self.settings.get('static_hash_cache', True):
+    #     #     StaticFileHandler.reset()
 
-        Note that after calling this method you still need to call
-        ``IOLoop.instance().start()`` to start the server.
-        # """
-        # # import is here rather than top level because HTTPServer
-        # # is not importable on appengine
-        # from tornado.httpserver import HTTPServer
-        # server = HTTPServer(self, **kwargs)
-        # server.listen(port, address)
+    #     logger.debug("Application__call__:: execute handler")
+    #     handler._execute(transforms)
 
-    def add_handlers(self, host_pattern, host_handlers):
-        """Appends the given handlers to our handler list.
-
-        Host patterns are processed sequentially in the order they were
-        added. All matching patterns will be considered.
-        """
-        logging.debug("add_handlers(self, %s, %s)", host_pattern, host_handlers)
-        return super(DjangoApplication, self).add_handlers(host_pattern, host_handlers)
-
-        # if not host_pattern.endswith("$"):
-        #     host_pattern += "$"
-        # handlers = []
-        # # The handlers with the wildcard host_pattern are a special
-        # # case - they're added in the constructor but should have lower
-        # # precedence than the more-precise handlers added later.
-        # # If a wildcard handler group exists, it should always be last
-        # # in the list, so insert new groups just before it.
-        # if self.handlers and self.handlers[-1][0].pattern == '.*$':
-        #     self.handlers.insert(-1, (re.compile(host_pattern), handlers))
-        # else:
-        #     self.handlers.append((re.compile(host_pattern), handlers))
-
-        # for spec in host_handlers:
-        #     if isinstance(spec, (tuple, list)):
-        #         assert len(spec) in (2, 3, 4)
-        #         spec = URLSpec(*spec)
-        #     handlers.append(spec)
-        #     if spec.name:
-        #         if spec.name in self.named_handlers:
-        #             app_log.warning(
-        #                 "Multiple handlers named %s; replacing previous value",
-        #                 spec.name)
-        #         self.named_handlers[spec.name] = spec
-
-    def add_transform(self, transform_class):
-        logging.debug("add_transform(self, %s)", transform_class)
-        super(DjangoApplication, self).add_transform(transform_class)
-        # self.transforms.append(transform_class)
-
-    def _get_host_handlers(self, request):
-        logging.debug("_get_host_handlers(self, %s)", request)
-        return super(DjangoApplication, self)._get_host_handlers(request)
-        # host = request.host.lower().split(':')[0]
-        # matches = []
-        # for pattern, handlers in self.handlers:
-        #     if pattern.match(host):
-        #         matches.extend(handlers)
-        # # Look for default host if not behind load balancer (for debugging)
-        # if not matches and "X-Real-Ip" not in request.headers:
-        #     for pattern, handlers in self.handlers:
-        #         if pattern.match(self.default_host):
-        #             matches.extend(handlers)
-        # return matches or None
-
-    def _load_ui_methods(self, methods):
-        logging.debug("_load_ui_methods(self, %s)", methods)
-        super(DjangoApplication, self)._load_ui_methods(methods)
-        # if isinstance(methods, types.ModuleType):
-        #     self._load_ui_methods(dict((n, getattr(methods, n))
-        #                                for n in dir(methods)))
-        # elif isinstance(methods, list):
-        #     for m in methods:
-        #         self._load_ui_methods(m)
-        # else:
-        #     for name, fn in methods.items():
-        #         if not name.startswith("_") and hasattr(fn, "__call__") \
-        #                 and name[0].lower() == name[0]:
-        #             self.ui_methods[name] = fn
-
-    def _load_ui_modules(self, modules):
-        logging.debug("_load_ui_modules(self, %s)", modules)
-        print("_load_ui_modules(self, %s)" % (modules))
-        super(DjangoApplication, self)._load_ui_modules(modules)
-        # if isinstance(modules, types.ModuleType):
-        #     self._load_ui_modules(dict((n, getattr(modules, n))
-        #                                for n in dir(modules)))
-        # elif isinstance(modules, list):
-        #     for m in modules:
-        #         self._load_ui_modules(m)
-        # else:
-        #     assert isinstance(modules, dict)
-        #     for name, cls in modules.items():
-        #         try:
-        #             if issubclass(cls, UIModule):
-        #                 self.ui_modules[name] = cls
-        #         except TypeError:
-        #             pass
-
-    def start_request(self, connection):
-        logging.debug("start_request(self, %s)", connection)
-        print("start_request(self, %s)" % connection)
-        return super(DjangoApplication, self).start_request(connection)
-        # # Modern HTTPServer interface
-        # return _RequestDispatcher(self, connection)
-
-    def __call__(self, request):
-        logging.debug("__call__(self, %s)", request)
-        print("__call__(self, %s)" % request)
-
-        hdlr = self._app_handler()
-        res = hdlr(request)
-
-        print("DjangoApplication::__call__ result" % res)
-        # return super(DjangoApplication, self).__call__(request)
-        # # Legacy HTTPServer interface
-        # dispatcher = _RequestDispatcher(self, None)
-        # dispatcher.set_request(request)
-        # return dispatcher.execute()
-
-    def reverse_url(self, name, *args):
-        logging.debug("reverse_url(self, %s, %s)", name, args)
-        return super(DjangoApplication, self).reverse_url(name, *args)
-        """Returns a URL path for handler named ``name``
-
-        The handler must be added to the application as a named `URLSpec`.
-
-        Args will be substituted for capturing groups in the `URLSpec` regex.
-        They will be converted to strings if necessary, encoded as utf8,
-        and url-escaped.
-        """
-        # if name in self.named_handlers:
-        #     return self.named_handlers[name].reverse(*args)
-        # raise KeyError("%s not found in named urls" % name)
-
-    def log_request(self, handler):
-        logging.debug("log_request(self, %s)", handler)
-        return super(DjangoApplication, self).log_request(handler)
-        """Writes a completed HTTP request to the logs.
-
-        By default writes to the python root logger.  To change
-        this behavior either subclass Application and override this method,
-        or pass a function in the application settings dictionary as
-        ``log_function``.
-        """
-        # if "log_function" in self.settings:
-        #     self.settings["log_function"](handler)
-        #     return
-        # if handler.get_status() < 400:
-        #     log_method = access_log.info
-        # elif handler.get_status() < 500:
-        #     log_method = access_log.warning
-        # else:
-        #     log_method = access_log.error
-        # request_time = 1000.0 * handler.request.request_time()
-        # log_method("%d %s %.2fms", handler.get_status(),
-        #            handler._request_summary(), request_time)
+    #     logger.debug("Application__call__:: return handler")
+    #     return handler
+    # # __call__()
+# DjangoApplication

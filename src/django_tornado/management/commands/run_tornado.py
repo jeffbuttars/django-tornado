@@ -4,8 +4,9 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.wsgi
 from django.conf import settings
-import django.core.handlers.wsgi
+# import django.core.handlers.wsgi
 from django.core.management.base import BaseCommand
+from django_tornado.core.handlers.dj_tornado import DjangoApplication
 
 
 class Command(BaseCommand):
@@ -32,37 +33,59 @@ class Command(BaseCommand):
             default=8000,
             help="Enable Tornado's debug mode.",
         ),
+
+        make_option(
+            '--autoreload',
+            dest='autoreload',
+            default=False,
+            help="Enable Tornado's autoreload.",
+        ),
+
+        make_option(
+            '--gzip',
+            dest='gzip',
+            default=False,
+            help="Enable Tornado's gzip.",
+        ),
+
+        make_option(
+            '--save_traceback',
+            dest='save_traceback',
+            default=False,
+            help="Enable Tornado's save_traceback and print a traceback",
+        ),
+
+        make_option(
+            '--static_hash_cache',
+            dest='static_hash_cache',
+            default=False,
+            help="Enable Tornado's static_hash_cache option",
+        ),
     )
 
     def handle(self, *args, **options):
-        """Start a tornado ioloop running Django as it's
-        WSGI App. Also, we add a static file handler to keep things happy.
-
-        :param *args: arg description
-        :type *args: type description
-        :param **options: arg description
-        :type **options: type description
-        :return:
-        :rtype:
+        """Start a tornado ioloop running Django
         """
+        # for opt in self.option_list:
+        #     print(dir(opt))
+        #     print(opt)
+        # # end for opt in self.option_list
 
-        wsgi_app = tornado.wsgi.WSGIContainer(
-            django.core.handlers.wsgi.WSGIHandler())
+        # print(options)
 
-        # Setup a tornado app to handle static files.
-        tornado_app = tornado.web.Application(
-            [
-                (r'%s(.*)' % settings.STATIC_URL,
-                 tornado.web.StaticFileHandler, {
-                     'path': settings.STATIC_ROOT}),
-                (r'.*',
-                 tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
-            ],
+
+        tornado_app = DjangoApplication(
             debug=options['debug'],
+            autoreload=options['autoreload'],
+            gzip=options['gzip'],
+            save_traceback=options['save_traceback'],
+            static_hash_cache=options['static_hash_cache'],
         )
 
-        http_server = tornado.httpserver.HTTPServer(tornado_app)
-        http_server.listen(options['port'])
+        # http_server = tornado.httpserver.HTTPServer(tornado_app)
+        # http_server.listen(options['port'])
+        # tornado_app.listen(int(options['port']))
+        tornado_app.listen(options['port'])
         tornado.ioloop.IOLoop.instance().start()
     # handle()
 # Command

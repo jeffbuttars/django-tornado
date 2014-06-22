@@ -3,7 +3,7 @@
 .PHONY: reset
 reset:
 	-yes y | pip uninstall --exists-action=w django-tornado
-	pip install --exists-action=w --pre ../src/
+	pip install --exists-action=w --pre --no-deps ../src/
 
 .PHONY: run
 run: reset

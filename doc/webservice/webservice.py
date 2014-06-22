@@ -33,150 +33,66 @@ import os
 
 # make sure 'our' tornado and django is picked up first.
 this_dir = os.path.realpath(os.path.dirname(__file__))
-# sys.path.insert(1, os.path.join(this_dir, 'django'))
+sys.path.insert(1, os.path.join(this_dir, 'django'))
 sys.path.insert(1, os.path.join(this_dir, 'tornado'))
-print(sys.path)
-# sys.meta_path.insert(0, sys.meta_path.pop(-1))
-# print(sys.meta_path)
 
 import tornado.httpserver
+import tornado.web
 import tornado.ioloop
-from tornado import httputil
-from tornado.util import bytes_type, u
 
-# logger.debug("%s", dir(httputil))
-# class HttpServerHandler(httputil.HTTPServerConnectionDelegate):
-#     """Not until tornado 4.0
-#     """
 
-#     def __init__(self, default_host="", transforms=None,
-#                  **settings):
+class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
 
-#         logger.debug("%s::__init__ default_host:%s, transforms: %s, settings: %s", self,
-#                      default_host, transforms, settings
-#                     )
+    def __init__(self, application, request, **kwargs):
+        logger.debug("DjangoTornadoRequestHandler::__init__() application: %s, request: %s, kwargs: %s",
+                     application, request, kwargs)
+        super(DjangoTornadoRequestHandler, self).__init__(application, request, **kwargs)
+    # __init__()
 
-#         if transforms is None:
-#             self.transforms = []
-#             if settings.get("gzip"):
-#                 self.transforms.append(GZipContentEncoding)
-#         else:
-#             self.transforms = transforms
-#         self.named_handlers = {}
-#         self.default_host = default_host
-#         self.settings = settings
-#         self.ui_modules = {'linkify': _linkify,
-#                            'xsrf_form_html': _xsrf_form_html,
-#                            'Template': TemplateModule,
-#                            }
-#         self.ui_methods = {}
-#         # self._load_ui_modules(settings.get("ui_modules", {}))
-#         # self._load_ui_methods(settings.get("ui_methods", {}))
-#         if self.settings.get("static_path"):
-#             path = self.settings["static_path"]
-#             static_url_prefix = settings.get("static_url_prefix",
-#                                              "/static/")
-#             static_handler_class = settings.get("static_handler_class",
-#                                                 StaticFileHandler)
-#             static_handler_args = settings.get("static_handler_args", {})
-#             static_handler_args['path'] = path
+    def _execute(self, transforms, *args, **kwargs):
+        logger.debug("DjangoTornadoRequestHandler::_execute() transforms: %s, args: %s, kwargs: %s",
+                     transforms, args, kwargs)
+        return super(DjangoTornadoRequestHandler, self)._execute(transforms, *args, **kwargs)
+    # _execute()
 
-#         if self.settings.get('debug'):
-#             self.settings.setdefault('autoreload', True)
-#             self.settings.setdefault('compiled_template_cache', False)
-#             self.settings.setdefault('static_hash_cache', False)
-#             self.settings.setdefault('serve_traceback', True)
+    def _execute_method(self):
+        gen_log.debug("DjangoTornadoRequestHandler::_execute_method")
+        if not self._finished:
+            # method = getattr(self, self.request.method.lower())
+            self._when_complete(self.django_handle_request(*self.path_args, **self.path_kwargs),
+                                self._execute_finish)
+            # self._when_complete(method(*self.path_args, **self.path_kwargs),
+            #                     self._execute_finish)
 
-#         # Automatically reload modified modules
-#         if self.settings.get('autoreload'):
-#             from tornado import autoreload
-#             autoreload.start()
+    def django_handle_request(self, *args, **kwargs):
+        """todo: Docstring for django_handle_request
 
-#     def add_transform(self, transform_class):
-#         logger.debug("%s::add_transform transform_class: %s", self, transform_class)
-#         self.transforms.append(transform_class)
-
-#     def start_request(self, connection):
-#         # Modern HTTPServer interface
-#         logger.debug("%s::start_request connection: %s", self, connection)
-#         return _RequestDispatcher(self, connection)
-
-#     # def __call__(self, request):
-#     #     """todo: Docstring for __call__
-        
-#     #     :param request: arg description
-#     #     :type request: HTTPServerRequest or HTTPServerConnectionDelegate
-#     #     :return:
-#     #     :rtype:
-#     #     """
+        :param *args: arg description
+        :type *args: type description
+        :param **kwargs: arg description
+        :type **kwargs: type description
+        :return:
+        :rtype:
+        """
     
-#     #     pass
-#     # # __call__()
+        gen_log.debug("DjangoTornadoRequestHandler::django_handle_request() args: %s, kwargs: %s",
+                      args, kwargs)
+        self.write("<html>Hello, world <br />")
+        self.write(str(args))
+        self.write("<br />")
+        self.write(str(kwargs))
+        self.write("<br />")
+        self.write("</html>")
+    # django_handle_request()
 
-#     def start_request(self, server_conn, request):
-#         """
-#         Modern HTTPServer interface
-
-#         This method is called by the server when a new request has started.
-
-#         :arg server_conn: is an opaque object representing the long-lived
-#             (e.g. tcp-level) connection.
-#         :arg request_conn: is a `.HTTPConnection` object for a single
-#             request/response exchange.
-
-#         This method should return a `.HTTPMessageDelegate`.
-#         """
-#         logger.debug("%s::start_request server_conn: %s, request_conn: %s", self,
-#                     server_conn, request_conn)
-
-#         message = "You requested %s\n" % request.uri
-#         request.connection.write_headers(
-#             httputil.ResponseStartLine('HTTP/1.1', 200, 'OK'),
-#             {"Content-Length": str(len(message))})
-#         request.connection.write(message)
-#         request.connection.finish()
-
-#         return _RequestDispatcher(self, connection)
-
-#     def on_close(self, server_conn):
-#         """This method is called when a connection has been closed.
-
-#         :arg server_conn: is a server connection that has previously been
-#             passed to ``start_request``.
-#         """
-#         logger.debug("%s::on_close server_conn: %s", self, server_conn)
-#         pass
-
-#     def log_request(self, handler):
-#         """Writes a completed HTTP request to the logs.
-
-#         By default writes to the python root logger.  To change
-#         this behavior either subclass Application and override this method,
-#         or pass a function in the application settings dictionary as
-#         ``log_function``.
-#         """
-#         logger.debug("%s::log_request handler: %s", self, handler)
-
-#         if "log_function" in self.settings:
-#             self.settings["log_function"](handler)
-#             return
-#         if handler.get_status() < 400:
-#             log_method = access_log.info
-#         elif handler.get_status() < 500:
-#             log_method = access_log.warning
-#         else:
-#             log_method = access_log.error
-#         request_time = 1000.0 * handler.request.request_time()
-#         log_method("%d %s %.2fms", handler.get_status(),
-#                    handler._request_summary(), request_time)
-
-# # HttpServerHandler
-# logger.debug("%s::", self,)
+    def get(self):
+        gen_log.debug("DjangoTornadoRequestHandler::get")
+        self.write("Hello, world")
+    # get()
+# DjangoTornadoRequestHandler
 
 
-class HttpServerHandler(object):
-    """Docstring for HttpServerHandler """
-
+class DjangoApplication(tornado.web.Application):
     def __init__(self, *args, **kwargs):
         """todo: to be defined
         
@@ -185,7 +101,11 @@ class HttpServerHandler(object):
         :param **kwargs: arg description
         :type **kwargs: type description
         """
-        logger.debug("%s::__init__ args:%s, kwargs:%s", self, args, kwargs)
+        logger.debug("DjangoApplication::__init__() args: %s, kwargs: %s",
+                     args, kwargs)
+
+        self._django_req_cls = DjangoTornadoRequestHandler
+        super(DjangoApplication, self).__init__(*args, **kwargs)
     # __init__()
 
     def __call__(self, request):
@@ -196,42 +116,43 @@ class HttpServerHandler(object):
         :return:
         :rtype:
         """
-        logger.debug("%s::__call__ request: %s", self, request)
-        logger.debug("%s::__call__ dir(request): %s", self, dir(request))
-        logger.debug("%s::__call__ dir(request.connection): %s", self, dir(request.connection))
-        logger.debug("bytes_type %s", bytes_type)
-    
-        # body = bytes("You requested %s\n" % request.uri, 'utf8')
-        # message = bytes('HTTP/1.1 200 OK\r\n', 'utf8')
-        # message += bytes('Content-Length: %d\r\n\r\n%s' % (len(body), body), 'utf8')
-        body = "You requested %s\n" % request.uri
-        message = "HTTP/1.1 200 OK\r\n"
-        message += "Content-Length: %d\r\n\r\n%s" % (len(body), body)
-        request.write(bytes(message, 'utf8'))
-        request.finish()
-    # __call__()
-    
-# HttpServerHandler
+        logger.debug("DjangoApplication::__call__()request: %s", request)
 
-# def handle_request(request):
-#     message = "You requested %s\n" % request.uri
-#     request.connection.write_headers(
-#         httputil.ResponseStartLine('HTTP/1.1', 200, 'OK'),
-#         {"Content-Length": str(len(message))})
-#     request.connection.write(message)
-#     request.connection.finish()
+        # return super(DjangoApplication, self).__call__(request)
+
+        """Called by HTTPServer to execute the request."""
+        gen_log.debug("Application__call__:: request:%s", request)
+
+        transforms = [t(request) for t in self.transforms]
+
+        handler_args = self.settings.get(
+            'default_handler_args', {})
+        handler = self._django_req_cls(self, request, **handler_args)
+
+        # # If template cache is disabled (usually in the debug mode),
+        # # re-compile templates and reload static files on every
+        # # request so you don't need to restart to see changes
+        # gen_log.debug("Application__call__:: handler template cache")
+        # if not self.settings.get("compiled_template_cache", True):
+        #     with RequestHandler._template_loader_lock:
+        #         for loader in RequestHandler._template_loaders.values():
+        #             loader.reset()
+        # if not self.settings.get('static_hash_cache', True):
+        #     StaticFileHandler.reset()
+
+        gen_log.debug("Application__call__:: execute handler")
+        handler._execute(transforms)
+
+        gen_log.debug("Application__call__:: return handler")
+        return handler
+    # __call__()
+# DjangoApplication
 
 
 def main():
     logger.debug("main")
-    # http_server = tornado.httpserver.HTTPServer(handle_request)
-    logger.debug("main init handler")
-    handler = HttpServerHandler()
-    logger.debug("main init server")
-    http_server = tornado.httpserver.HTTPServer(handler, xheaders=True)
-    logger.debug("main listen")
-    http_server.listen(8888)
-    logger.debug("main start")
+    application = DjangoApplication()
+    application.listen(8888)
     tornado.ioloop.IOLoop.instance().start()
 # main()
 
