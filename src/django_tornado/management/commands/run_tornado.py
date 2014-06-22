@@ -6,7 +6,7 @@ import tornado.wsgi
 from django.conf import settings
 # import django.core.handlers.wsgi
 from django.core.management.base import BaseCommand
-from django_tornado.core.handlers.dj_tornado import DjangoApplication
+from django_tornado.core.handlers.application import DjangoApplication
 
 
 class Command(BaseCommand):
@@ -56,6 +56,13 @@ class Command(BaseCommand):
         ),
 
         make_option(
+            '--static',
+            dest='static',
+            default=False,
+            help="Enable Tornado's static file handling",
+        ),
+
+        make_option(
             '--static_hash_cache',
             dest='static_hash_cache',
             default=False,
@@ -73,14 +80,18 @@ class Command(BaseCommand):
 
         # print(options)
 
+        app_kwargs = {
+            'debug': options['debug'],
+            'autoreload': options['autoreload'],
+            'gzip': options['gzip'],
+            'save_traceback': options['save_traceback'],
+            'static': options['static'],
+            'static_hash_cache': options['static_hash_cache'],
+        }
 
-        tornado_app = DjangoApplication(
-            debug=options['debug'],
-            autoreload=options['autoreload'],
-            gzip=options['gzip'],
-            save_traceback=options['save_traceback'],
-            static_hash_cache=options['static_hash_cache'],
-        )
+        if options['debug'] and not options['static']:
+            app_kwargs['staticfiles'] = True
+        tornado_app = DjangoApplication(**app_kwargs)
 
         # http_server = tornado.httpserver.HTTPServer(tornado_app)
         # http_server.listen(options['port'])

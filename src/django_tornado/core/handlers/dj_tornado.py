@@ -11,7 +11,6 @@ from io import BytesIO
 # import time
 # import datetime
 
-import tornado.web
 # from tornado.escape import utf8
 # from tornado import httputil
 
@@ -22,7 +21,12 @@ from django.core.handlers import base
 from django.utils import datastructures
 from django.utils.functional import cached_property
 from django.core.urlresolvers import set_script_prefix
-from django.utils.deprecation import RemovedInDjango19Warning
+try:
+    from django.utils.deprecation import RemovedInDjango19Warning
+except ImportError:
+    class RemovedInDjango19Warning(PendingDeprecationWarning):
+        pass
+
 from django.utils.encoding import force_str, force_text
 # Do we need this? I hope not, but wsgi uses it.
 # from threading import Lock
@@ -93,8 +97,9 @@ class TornadoRequest(http.HttpRequest):
         :param t_req: arg description
         :type t_req: type description
         """
+        logger.debug("TornadoRequest::__init__ request: %s", t_req)
 
-        self._tornado_request = t_req
+        self.tornado_request = t_req
 
         t_headers = t_req.headers
 
@@ -103,13 +108,18 @@ class TornadoRequest(http.HttpRequest):
         # the SCRIPT_NAME URL without a trailing slash). We really need to
         # operate as if they'd requested '/'. Not amazingly nice to force
         # the path like this, but should be harmless.
-        path_info = get_path_info(t_req) or '/'
+        # path_info = get_path_info(t_req) or '/'
+        path_info = t_req.uri
 
         self.path_info = path_info
         self.path = '%s/%s' % (script_name.rstrip('/'), path_info.lstrip('/'))
+        logger.debug("TornadoRequest::__init__  PATH %s", self.path)
+
         self.host = t_req.host
 
         self.META = t_headers
+        logger.debug("TornadoRequest::__init__ setting META %s", self.META)
+
         self.META['PATH_INFO'] = path_info
         self.META['SCRIPT_NAME'] = script_name
         host_parts = t_req.host.rsplit(':', 1)
@@ -118,7 +128,10 @@ class TornadoRequest(http.HttpRequest):
 
         # self.method = self.META['REQUEST_METHOD'].upper()
         self.META['REQUEST_METHOD'] = 'REQUEST_' + t_req.protocol.upper()
-        self.method = 'REQUEST_' + t_req.protocol.upper()
+        logger.debug("TornadoRequest::__init__  META set %s", self.META)
+
+        self.method = t_req.method
+        # logger.debug("TornadoRequest::__init__  method %s", self.method)
         # if self.method not in ('GET', 'POST'):
         #     raise Exception("Fix METHOD header stuff!!!!!!")
 
@@ -144,7 +157,8 @@ class TornadoRequest(http.HttpRequest):
     # __init__()
 
     def _get_scheme(self):
-        return self._tornado_request.protocol
+        logger.debug("_get_scheme")
+        return self.tornado_request.protocol
     # _get_scheme()
 
     def _get_request(self):
@@ -156,22 +170,28 @@ class TornadoRequest(http.HttpRequest):
 
     @cached_property
     def GET(self):
-        # return self._tornado_request.query_arguments
-        qry_args = self._tornado_request.query
+        logger.debug("TornadoRequest GET")
+        # return self.tornado_request.query_arguments
+        qry_args = self.tornado_request.query
         return http.QueryDict(qry_args, encoding=self._encoding)
 
     def _get_post(self):
+        logger.debug("TornadoRequest _get_post ")
         if not hasattr(self, '_post'):
             self._load_post_and_files()
         return self._post
 
     def _set_post(self, post):
+        logger.debug("TornadoRequest _set_post %s ", post)
         self._post = post
 
     @cached_property
     def COOKIES(self):
-        raw_cookie = self._tornado_request.headers.get('Cookie', '')
-        return http.parse_cookie(raw_cookie)
+        logger.debug("TornadoRequest COOKIES %s",
+                     self.tornado_request.cookies)
+        logger.debug("TornadoRequest COOKIES %s",
+                     http.parse_cookie(self.tornado_request.cookies))
+        return http.parse_cookie(self.tornado_request.cookies)
 
     def _get_files(self):
         if not hasattr(self, '_files'):
@@ -179,7 +199,7 @@ class TornadoRequest(http.HttpRequest):
         return self._files
 
     POST = property(_get_post, _set_post)
-    # POST = self._tornado_request.body_arguments
+    # POST = self.tornado_request.body_arguments
     FILES = property(_get_files)
     REQUEST = property(_get_request)
 # TornadoRequest
@@ -202,6 +222,7 @@ class TornadoHandler(base.BaseHandler):
         :rtype:
         """
         logger.debug("TornadoHandler __call__ %s", t_req)
+        self.tornado_request = t_req
 
         # Set up middleware if needed. We couldn't do this earlier, because
         # settings weren't available.
@@ -220,7 +241,7 @@ class TornadoHandler(base.BaseHandler):
 
         signals.request_started.send(sender=self.__class__)
         try:
-            request = self.request_class(t_req)
+           request = self.request_class(t_req)
         except UnicodeDecodeError:
             logger.warning('Bad Request (UnicodeDecodeError)',
                            exc_info=sys.exc_info(),
@@ -286,169 +307,14 @@ def get_script_name(t_req):
     return script_name
 
 
-def get_path_info(t_req):
-    """
-    Returns the HTTP request's PATH_INFO as a unicode string.
-    """
-    path_info = t_req.headers.get('PATH_INFO', '/')
+# def get_path_info(t_req):
+#     """
+#     Returns the HTTP request's PATH_INFO as a unicode string.
+#     """
+#     path_info = t_req.headers.get('PATH_INFO', '/')
 
-    # It'd be better to implement URI-to-IRI decoding, see #19508.
-    # return path_info.decode(UTF_8)
-    return path_info
-
-
-class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
-
-    def __init__(self, application, request, **kwargs):
-        logger.debug(("DjangoTornadoRequestHandler::__init__() "
-                      "application: %s, request: %s, kwargs: %s"),
-                     application, request, kwargs)
-        super(DjangoTornadoRequestHandler, self).__init__(application, request, **kwargs)
-
-        self._dj_handler = TornadoHandler()
-    # __init__()
-
-    # def _execute(self, transforms, *args, **kwargs):
-    #     logger.debug(("DjangoTornadoRequestHandler::_execute() "
-    #                  "transforms: %s, args: %s, kwargs: %s"),
-    #                  transforms, args, kwargs)
-
-    #     # return super(DjangoTornadoRequestHandler, self)._execute(transforms, *args, **kwargs)
-    #     self._transforms = transforms
-    #     try:
-    #         if self.request.method not in self.SUPPORTED_METHODS:
-    #             raise HTTPError(405)
-    #         self.path_args = [self.decode_argument(arg) for arg in args]
-    #         self.path_kwargs = dict((k, self.decode_argument(v, name=k))
-    #                                 for (k, v) in kwargs.items())
-    #         # If XSRF cookies are turned on, reject form submissions without
-    #         # the proper cookie
-    #         if self.request.method not in ("GET", "HEAD", "OPTIONS") and \
-    #                 self.application.settings.get("xsrf_cookies"):
-    #             self.check_xsrf_cookie()
-    #         self._when_complete(self.prepare(), self._execute_method)
-    #     except Exception as e:
-    #         self._handle_request_exception(e)
-    # # # _execute()
-
-    def _execute_method(self):
-        logger.debug("DjangoTornadoRequestHandler::_execute_method")
-        if not self._finished:
-            self._when_complete(self.django_handle_request(*self.path_args, **self.path_kwargs),
-                                self._execute_finish)
-
-    def django_handle_request(self, *args, **kwargs):
-        """todo: Docstring for django_handle_request
-
-        :param *args: arg description
-        :type *args: type description
-        :param **kwargs: arg description
-        :type **kwargs: type description
-        :return:
-        :rtype:
-        """
-
-        logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
-                      " args: %s, kwargs: %s"),
-                     args, kwargs)
-
-        # Now use the Django handler to run the request through Django
-        resp = self._dj_handler(self.request)
-
-        # Update the status with the Django staus
-        self.set_status(resp.status_code, resp.reason_phrase)
-
-        # Update the headers with the Django headers
-        for k, v in resp.items():
-            self.set_header(k, v)
-        # end for k, v in resp.items
-
-        # Write the Django generated content
-        self.write(resp.content)
-
-    # django_handle_request()
-# DjangoTornadoRequestHandler
+#     # It'd be better to implement URI-to-IRI decoding, see #19508.
+#     # return path_info.decode(UTF_8)
+#     return path_info
 
 
-# Looks like we'll need our own version of the tornado web Application class
-# to do this well.
-# Sat Jun  7 19:36:09 2014
-class DjangoApplication(tornado.web.Application):
-
-    def __init__(self, *args, **kwargs):
-        """todo: to be defined
-        
-        :param *args: arg description
-        :type *args: type description
-        :param **kwargs: arg description
-        :type **kwargs: type description
-        """
-        logger.debug("DjangoApplication::__init__() args: %s, kwargs: %s",
-                     args, kwargs)
-
-        # self._django_req_cls = DjangoTornadoRequestHandler
-        # _django_app_ref = self
-        def _fallback_wrapper(request, *args, **kwargs):
-            logger.debug("_fallback_wrapper app:%s, request: %s, kwargs: %s",
-                         self, request, kwargs)
-            return DjangoTornadoRequestHandler(self, request, **kwargs)
-        # _fallback_wrapper()
-
-        # Add our Django handlers
-        self._django_handlers = [
-            # (r'%s(.*)' % settings.STATIC_URL,
-            #  tornado.web.StaticFileHandler, {'path': settings.STATIC_ROOT}),
-            (r'.*', DjangoTornadoRequestHandler),
-            # (r'.*',
-            #  tornado.web.FallbackHandler,
-            #  dict(fallback=_fallback_wrapper)),
-        ]
-
-        super(DjangoApplication, self).__init__(
-            self._django_handlers,
-            static_url_prefix=getattr(settings, 'STATIC_URL', ''),
-            static_path=getattr(settings, 'STATIC_ROOT', 'staticfiles'),
-            *args,
-            **kwargs)
-    # __init__()
-
-    # def __call__(self, request):
-    #     """todo: Docstring for __call__
-        
-    #     :param request: arg description
-    #     :type request: type description
-    #     :return:
-    #     :rtype:
-    #     """
-    #     logger.debug("DjangoApplication::__call__()request: %s", request)
-    #     # super(DjangoApplication, self).__call__(request)
-
-    #     return super(DjangoApplication, self).__call__(request)
-
-    #     """Called by HTTPServer to execute the request."""
-    #     logger.debug("Application__call__:: request:%s", request)
-
-    #     transforms = [t(request) for t in self.transforms]
-
-    #     handler_args = self.settings.get(
-    #         'default_handler_args', {})
-    #     handler = self._django_req_cls(self, request, **handler_args)
-
-    #     # # If template cache is disabled (usually in the debug mode),
-    #     # # re-compile templates and reload static files on every
-    #     # # request so you don't need to restart to see changes
-    #     # gen_log.debug("Application__call__:: handler template cache")
-    #     # if not self.settings.get("compiled_template_cache", True):
-    #     #     with RequestHandler._template_loader_lock:
-    #     #         for loader in RequestHandler._template_loaders.values():
-    #     #             loader.reset()
-    #     # if not self.settings.get('static_hash_cache', True):
-    #     #     StaticFileHandler.reset()
-
-    #     logger.debug("Application__call__:: execute handler")
-    #     handler._execute(transforms)
-
-    #     logger.debug("Application__call__:: return handler")
-    #     return handler
-    # # __call__()
-# DjangoApplication
