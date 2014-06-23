@@ -109,7 +109,7 @@ class TornadoRequest(http.HttpRequest):
         # operate as if they'd requested '/'. Not amazingly nice to force
         # the path like this, but should be harmless.
         # path_info = get_path_info(t_req) or '/'
-        path_info = t_req.uri
+        path_info = t_req.path
 
         self.path_info = path_info
         self.path = '%s/%s' % (script_name.rstrip('/'), path_info.lstrip('/'))

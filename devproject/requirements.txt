@@ -1,4 +1,7 @@
-#-e git://github.com/django/django.git@1.7b4#egg=django
+Django==1.7b4
 backports.ssl-match-hostname==3.4.0.2
-django-tornado==1.1.6
-#tornado==3.2.2
+django-admin-bootstrapped==1.6.5
+django-tornado==2.0.0a
+tornado==3.2.2
+usethis-django-bootstrap==3.1.1
+wsgiref==0.1.2

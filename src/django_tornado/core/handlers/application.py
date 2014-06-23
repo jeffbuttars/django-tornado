@@ -5,6 +5,7 @@ logger = logging.getLogger('django.debug')
 import tornado.web
 
 from django.conf import settings
+from django.http.response import StreamingHttpResponse
 
 from dj_staticfiles import StaticFilesHandler
 from dj_tornado import TornadoHandler
@@ -67,8 +68,15 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         # Write the Django generated content
         logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
                       "writing content"))
-        self.write(resp.content)
 
+        try:
+            self.write(resp.content)
+        except AttributeError:
+            for cont in resp.streaming_content:
+                self.write(cont)
+            # end for cont in resp
+
+        self.finish()
     # django_handle_request()
 # DjangoTornadoRequestHandler
 
