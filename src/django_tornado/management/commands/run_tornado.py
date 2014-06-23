@@ -28,7 +28,9 @@ def t_run(addr, port, t_app, ipv6=False, threading=False):
     # httpd.set_app(wsgi_handler)
     # httpd.serve_forever()
 
-    t_app.listen(port)
+    server = tornado.httpserver.HTTPServer(t_app)
+    server.bind(port)
+    server.start(NUM_PROCS)
     tornado.ioloop.IOLoop.instance().start()
 
 import django.core.servers.basehttp
