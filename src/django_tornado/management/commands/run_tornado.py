@@ -69,31 +69,19 @@ class Command(RSCommand):
     help = ("Starts a Tornado server instance for development or production")
     args = '[optional port number, or ipaddr:port]'
 
-    # if settings.DEBUG:
-    #     print("DEBUG True is default")
+    NUM_PROCS = 0
+    if settings.DEBUG:
+        NUM_PROCS = 1
 
     option_list += (
-        # make_option(
-        #     '--debug',
-        #     action='store_true',
-        #     dest='debug',
-        #     default=settings.DEBUG,
-        #     help="Enable Tornado's debug mode.",
-        # ),
-
-        # make_option(
-        #     '--port',
-        #     dest='port',
-        #     default=8000,
-        #     help="Enable Tornado's debug mode.",
-        # ),
-
-        # make_option(
-        #     '--autoreload',
-        #     dest='autoreload',
-        #     default=False,
-        #     help="Enable Tornado's autoreload.",
-        # ),
+        make_option(
+            '--num_proc',
+            dest='num_proc',
+            default=NUM_PROCS,
+            help=("The number of tornado processes to use. Default is 1 in Debug mode and 0/auto"
+                  " in non-debug mode. Using a value of 0 will cause tornado to create as many"
+                  " processes are there are cores."),
+        ),
 
         make_option(
             '--gzip',
