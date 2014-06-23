@@ -1,4 +1,5 @@
 from optparse import make_option
+import re
 
 import tornado.httpserver
 import tornado.ioloop
@@ -11,26 +12,31 @@ from django_tornado.core.handlers.application import DjangoApplication
 
 # We monkey patch the built in run with our own Tornado based version
 def t_run(addr, port, t_app, ipv6=False, threading=False):
-    server_address = (addr, port)
-    if threading:
-        httpd_cls = type(str('WSGIServer'), (socketserver.ThreadingMixIn, WSGIServer), {})
-    else:
-        httpd_cls = WSGIServer
-    httpd = httpd_cls(server_address, WSGIRequestHandler, ipv6=ipv6)
-    if threading:
-        # ThreadingMixIn.daemon_threads indicates how threads will behave on an
-        # abrupt shutdown; like quitting the server by the user or restarting
-        # by the auto-reloader. True means the server will not wait for thread
-        # termination before it quits. This will make auto-reloader faster
-        # and will prevent the need to kill the server manually if a thread
-        # isn't terminating correctly.
-        httpd.daemon_threads = True
-    # httpd.set_app(wsgi_handler)
-    # httpd.serve_forever()
+    # server_address = (addr, port)
+    # if threading:
+    #     httpd_cls = type(str('WSGIServer'), (socketserver.ThreadingMixIn, WSGIServer), {})
+    # else:
+    #     httpd_cls = WSGIServer
+    # httpd = httpd_cls(server_address, WSGIRequestHandler, ipv6=ipv6)
+    # if threading:
+    #     # ThreadingMixIn.daemon_threads indicates how threads will behave on an
+    #     # abrupt shutdown; like quitting the server by the user or restarting
+    #     # by the auto-reloader. True means the server will not wait for thread
+    #     # termination before it quits. This will make auto-reloader faster
+    #     # and will prevent the need to kill the server manually if a thread
+    #     # isn't terminating correctly.
+    #     httpd.daemon_threads = True
+    # # httpd.set_app(wsgi_handler)
+    # # httpd.serve_forever()
+
+    fam = socket.AF_UNSPEC
+    if ipv6:
+        fam = socket.AF_INET6    
+
 
     server = tornado.httpserver.HTTPServer(t_app)
-    server.bind(port)
-    server.start(NUM_PROCS)
+    server.bind(port, address=addr, family=fam)
+    server.start(t_app.settings['num_proc'])
     tornado.ioloop.IOLoop.instance().start()
 
 import django.core.servers.basehttp
@@ -55,17 +61,19 @@ class Command(RSCommand):
         """
 
         app_kwargs = {
-            'debug': options['debug'],
-            'autoreload': options['use_reloader'],
-            'gzip': options['gzip'],
-            'save_traceback': options['save_traceback'],
-            'static': options['static'],
-            'static_hash_cache': options['static_hash_cache'],
+            'debug': options.get('debug'),
+            'autoreload': options.get('use_reloader'),
+            'gzip': options.get('gzip'),
+            'num_proc': options.get('num_proc'),
+            'save_traceback': options.get('save_traceback'),
+            'static': options.get('static'),
+            'static_hash_cache': options.get('static_hash_cache'),
         }
 
         if options['debug'] and not options['static']:
             app_kwargs['staticfiles'] = True
-        return = DjangoApplication(**app_kwargs)
+
+        return DjangoApplication(**app_kwargs)
     # get_handler()
 
     help = ("Starts a Tornado server instance for development or production")
@@ -75,6 +83,7 @@ class Command(RSCommand):
     if settings.DEBUG:
         NUM_PROCS = 1
 
+    option_list = RSCommand.option_list
     option_list += (
         make_option(
             '--num_proc',
@@ -114,19 +123,19 @@ class Command(RSCommand):
         ),
     )
 
-    def inner_run(self, *args, **options):
-        """Start a tornado ioloop running Django
-        """
-        # for opt in self.option_list:
-        #     print(dir(opt))
-        #     print(opt)
-        # # end for opt in self.option_list
+    # def inner_run(self, *args, **options):
+    #     """Start a tornado ioloop running Django
+    #     """
+    #     # for opt in self.option_list:
+    #     #     print(dir(opt))
+    #     #     print(opt)
+    #     # # end for opt in self.option_list
 
-        # print(options)
+    #     # print(options)
 
 
-        # http_server = tornado.httpserver.HTTPServer(tornado_app)
-        # http_server.listen(options['port'])
-        # tornado_app.listen(int(options['port']))
-    # inner_run()
+    #     # http_server = tornado.httpserver.HTTPServer(tornado_app)
+    #     # http_server.listen(options['port'])
+    #     # tornado_app.listen(int(options['port']))
+    # # inner_run()
 # Command
