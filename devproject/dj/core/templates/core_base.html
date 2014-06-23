@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+    {% block page_head %}
+
+        {% block page_meta %}
+        <meta charset="utf-8" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Django Tornado">
+        <meta name="author" content="Jeff Buttars">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="keywords" content="django tornado asynchronous async asyncio" >
+        {% endblock %}{# page_meta #}
+
+        {% block page_fonts %}
+        {# <link href='http://fonts.googleapis.com/css?family=Michroma|Racing+Sans+One|Nunito:400,700,300|Oxygen:400,700,300' rel='stylesheet' type='text/css'> #}
+        {% endblock %}{# page_fonts #}
+
+        <title>{% block page_title %}PuffSub - E-Liquid Delivered Monthly{% endblock %}</title>
+
+        {% block page_style_links %}
+            {{ BOOTSTRAP3_CSS|safe }}
+            {{ BOOTSTRAP3_THEME_CSS|safe }}
+            <!-- {# <link rel="shortcut icon" href="/img/favicon.ico" /> #} -->
+            <link rel="stylesheet" href="{{STATIC_URL}}css/sticky-footer-navbar.css" type="text/css"/>
+            <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" type="text/css"/>
+        {% endblock %}{# page_style_links #}
+
+        {% block page_js_links %}
+        {% endblock %}{# page_js_links #}
+
+        <style>
+        {% block page_style %}
+        {% endblock %}{# page_style #}
+        </style>
+
+        <script type="text/javascript" charset="utf-8">
+        {% block page_js %}
+        {% endblock %}{# page_js #}
+        </script>
+
+    {% endblock %}{# page_head #}
+    </head>
+    <body>
+    <div id="wrap">
+        {% block page_body %}
+        {% block page_body_container %}
+        <div class="container">
+        {% block page_body_navbar %}
+            {% include "core_navbar.djml" %}
+        {% endblock %} {# page_body_navbar #}
+
+            {% block message_bar %}
+            {% if messages %}
+            <div class="row">
+                <div class="col-md-12">
+                    <table class="table table-striped table-bordered" >
+                        {# <caption>Messages</caption> #}
+                        {% for msg in messages %}
+                        <tr {%if msg.tags %}class="{{ msg.tags }}"{% endif %}>
+                            <td>{{ msg }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>  
+                </div>
+            </div>
+            {% endif %}
+            {% endblock %}
+
+            {% block page_body_container_inner %}
+            {% endblock %}{# page_body_container_inner #}
+
+        </div> <!-- /container -->
+    </div> <!-- #wrap -->
+    <div id="footer">
+        <div class="container">
+        {% block page_footer %}
+            <p> &copy; Copyright <strong>Puffsub</strong> 2013
+                <span id="subscriptions_available">
+                    Subscriptions Available: <strong>{{ subs_avail }}</strong>
+                </span>
+            </p>
+        {% endblock %} {# page_footer #}
+        </div>
+    </div>
+
+        {% endblock %}{# page_body_container #}
+        {% endblock %} {# page_body #}
+
+        {% block page_bottom_js_links %}
+            {{ JQUERY_TAG|safe}}
+            {{ BOOTSTRAP3_JS|safe }}
+            <script src="{{ STATIC_URL }}js/core_base.js " type="text/javascript" charset="utf-8"></script>
+        {% endblock %}{# page_bottom_js_links #}
+
+        <script type="text/javascript" charset="utf-8">
+        {% block page_bottom_js %}
+        $("[rel='tooltip']").tooltip({'delay': 400});
+        {% endblock %}{# page_bottom_js #}
+        </script>
+
+        {# Age verify code #}
+        {% include "core_age_verify.html" %}
+    </body>
+</html>
+

@@ -40,7 +40,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_tornado',
-    # 'core',
+    'usethis_django_bootstrap',
+    'core',
 )
 
 MIDDLEWARE_CLASSES = (

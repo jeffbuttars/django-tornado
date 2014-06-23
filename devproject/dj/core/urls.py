@@ -1,12 +1,11 @@
 from django.conf.urls import patterns, include, url
-from django.contrib import admin
+import views
 
-admin.autodiscover()
-
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     # Examples:
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^', include('core.urls')),
+    url(r'^$', views.Index.as_view(), name="dj_index"),
 )
