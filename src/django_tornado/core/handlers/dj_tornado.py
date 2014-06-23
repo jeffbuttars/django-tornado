@@ -171,15 +171,13 @@ class TornadoRequest(http.HttpRequest):
     @cached_property
     def GET(self):
         logger.debug("TornadoRequest GET")
-        # return self.tornado_request.query_arguments
-        qry_args = self.tornado_request.query
-        return http.QueryDict(qry_args, encoding=self._encoding)
+        return http.QueryDict(
+            self.tornado_request.query,
+            encoding=self._encoding)
 
     def _get_post(self):
-        logger.debug("TornadoRequest _get_post ")
-        if not hasattr(self, '_post'):
-            self._load_post_and_files()
-        return self._post
+        logger.debug("TornadoRequest _get_post %s", self.tornado_request.body)
+        return http.QueryDict(self.tornado_request.body, encoding=self._encoding)
 
     def _set_post(self, post):
         logger.debug("TornadoRequest _set_post %s ", post)
@@ -255,24 +253,11 @@ class TornadoHandler(base.BaseHandler):
 
         response._handler_class = self.__class__
 
-        status = '%s %s' % (response.status_code, response.reason_phrase)
-        response_headers = [(str(k), str(v)) for k, v in response.items()]
-        for c in response.cookies.values():
-            response_headers.append((str('Set-Cookie'), str(c.output(header=''))))
-
-        # start_response(force_str(status), response_headers)
-        print("TornadoHandler __call__ status: %s\n response_headers: %s" % (
-            force_str(status), response_headers))
         print("TornadoHandler __call__ response %s" % (dir(response)))
         print("TornadoHandler __call__ response %s" % (response))
-        # print("TornadoHandler __call__ response serialize %s" % (response.serialize()))
 
         return response
     # __call__()
-
-    # def get(self, *args, **kwargs):
-    #     logger.debug("TornadoHandler::get %s, %s", args, kwargs)
-    # # get()
 # TornadoHandler
 
 

@@ -59,11 +59,21 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         # Update the headers with the Django headers
         logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
                       "copying headers"))
+
         for k, v in resp.items():
             logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
                           "setting header %s: %s") % (k, v))
-            self.set_header(k, v)
+            self.set_header(str(k), str(v))
         # end for k, v in resp.items
+
+        # Write the Django response's cookies to the tornado response
+        # headers
+        for c in resp.cookies.values():
+            logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
+                        "adding COOKIE %s", c))
+            self.add_header(
+                str('Set-Cookie'), str(c.output(header=''))
+            )
 
         # Write the Django generated content
         logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
@@ -115,4 +125,3 @@ class DjangoApplication(tornado.web.Application):
             **kwargs)
     # __init__()
 # DjangoApplication
-
