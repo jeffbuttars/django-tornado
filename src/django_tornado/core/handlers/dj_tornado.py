@@ -196,6 +196,20 @@ class TornadoRequest(http.HttpRequest):
             self._load_post_and_files()
         return self._files
 
+    def write(self, chunk):
+        """
+        Convenience wrapper for the Tornado request's write() method.
+        """
+        return self.tornado_request.write(chunk)
+    # write()
+
+    def finish(self):
+        """
+        Convenience wrapper for the Tornado request's finish() method.
+        """
+        return self.tornado_request.finish()
+    # finish()
+
     POST = property(_get_post, _set_post)
     # POST = self.tornado_request.body_arguments
     FILES = property(_get_files)
