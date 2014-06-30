@@ -22,24 +22,21 @@
             <li{% if request.path == "/" %} class="active"{% endif %}>
                 <a href="/">Home</a>
             </li>
-            <li class="dropdown active">
-                {# <a href="{% url 'eliquid-index' %}" #}
-                {#     class="dropdown-toggle" data-toggle="dropdown">Eliquid<span class="caret"></a> #}
-                {# <ul class="dropdown-menu"> #}
-                {#     <li{% if request.path == "/eliquid/recipies" %} class="active"{% endif %}> #}
-                {#         <a href="{% url 'eliquid-recipies' %} ">Recipies</a> #}
-                {#     </li> #}
-                {#     <li{% if request.path == "/eliquid/flavor/recipies" %} class="active"{% endif %}> #}
-                {#         <a href="{% url 'eliquid-flavor-recipies' %} ">Flavor Recipies</a> #}
-                {#     </li> #}
-                {#     <li{% if request.path == "/eliquid/flavor" %} class="active"{% endif %}> #}
-                {#         <a href="{% url 'eliquid-flavor' %} ">Flavors</a> #}
-                {#     </li> #}
-                {# </ul> #}
+            <li class="dropdown {% if request.path|slice:":6" == "/test/" %}active{% endif %}">
+                <a href="{% url 'dj_test_index' %}"
+                    class="dropdown-toggle" data-toggle="dropdown">Tests
+                </a>
+                <ul class="dropdown-menu">
+                    <li{% if request.path == "/test/" %}
+                         class="active"{% endif %}>
+                        <a href="{% url 'dj_test_index' %} ">Dashboard</a>
+                    </li>
+                    <li{% if request.path|slice:"15" == "/test/httpclient/" %}
+                         class="active"{% endif %}>
+                        <a href="{% url 'dj_test_httpclient' %} ">HTTP Client</a>
+                    </li>
+                </ul>
             </li>
-            {# <li{% if request.path|slice:":9" == "/products" %} class="active"{% endif %}> #}
-            {#     <a href="/products/">Products</a> #}
-            {# </li> #}
         {% endblock %}{# page_body_navbar_items #}
         </ul>
 

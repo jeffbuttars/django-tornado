@@ -28,7 +28,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + (
-    # 'django.core.context_processors.request',
+    'django.core.context_processors.request',
     'jquery.context_processor.jquery_url',
     'usethis_bootstrap.context_processor.bootstrap_urls',
 )
