@@ -1,1 +1,1 @@
-export VC_PYTHON_EXE=$(which python)
+export VC_PYTHON_EXE=$(which python2)

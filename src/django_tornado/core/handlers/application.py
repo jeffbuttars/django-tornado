@@ -7,8 +7,8 @@ import tornado.web
 from django.conf import settings
 from django.http.response import StreamingHttpResponse
 
-from dj_staticfiles import StaticFilesHandler
-from dj_tornado import TornadoHandler
+from django_tornado.core.handlers.dj_staticfiles import StaticFilesHandler
+from django_tornado.core.handlers.dj_tornado import TornadoHandler
 
 
 class DjangoTornadoRequestHandler(tornado.web.RequestHandler):

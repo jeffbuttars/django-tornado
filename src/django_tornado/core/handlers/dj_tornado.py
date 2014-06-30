@@ -220,7 +220,7 @@ class TornadoRequest(http.HttpRequest):
 class TornadoHandler(base.BaseHandler):
     """Docstring for TornadoHandler """
 
-    # WSGI locks, Ideally, we don't run threaded. But
+    # WSGI locks, Ideally, we don't run threaded, just multi process. But
     # keep this here as a note for now in case this comes up later.
     # initLock = Lock()
     request_class = TornadoRequest

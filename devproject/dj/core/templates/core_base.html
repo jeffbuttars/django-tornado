@@ -21,7 +21,6 @@
 
         {% block page_style_links %}
             {{ BOOTSTRAP3_CSS|safe }}
-            {{ BOOTSTRAP3_THEME_CSS|safe }}
             <!-- {# <link rel="shortcut icon" href="/img/favicon.ico" /> #} -->
             <link rel="stylesheet" href="{{STATIC_URL}}css/sticky-footer-navbar.css" type="text/css"/>
             <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" type="text/css"/>
@@ -48,7 +47,7 @@
         {% block page_body_container %}
         <div class="container">
         {% block page_body_navbar %}
-            {% include "core_navbar.djml" %}
+            {% include "core_navbar.html" %}
         {% endblock %} {# page_body_navbar #}
 
             {% block message_bar %}
@@ -76,9 +75,9 @@
     <div id="footer">
         <div class="container">
         {% block page_footer %}
-            <p> &copy; Copyright <strong>Puffsub</strong> 2013
+            <p> &copy; Copyright <strong>Django Tornado</strong> 2014
                 <span id="subscriptions_available">
-                    Subscriptions Available: <strong>{{ subs_avail }}</strong>
+                    Consulting Services Available
                 </span>
             </p>
         {% endblock %} {# page_footer #}
@@ -99,9 +98,6 @@
         $("[rel='tooltip']").tooltip({'delay': 400});
         {% endblock %}{# page_bottom_js #}
         </script>
-
-        {# Age verify code #}
-        {% include "core_age_verify.html" %}
     </body>
 </html>
 

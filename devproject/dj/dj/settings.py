@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+from django.conf import global_settings
+
 PROJECT_NAME = 'dj'
 
 # Quick-start development settings - unsuitable for production
@@ -24,6 +26,12 @@ SECRET_KEY = '^n%8c*kis1594axpst%o#ihebn@6b-*rd0+gbw1bu2silu73!8'
 DEBUG = True
 
 TEMPLATE_DEBUG = DEBUG
+
+TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + (
+    # 'django.core.context_processors.request',
+    'jquery.context_processor.jquery_url',
+    'usethis_bootstrap.context_processor.bootstrap_urls',
+)
 
 ALLOWED_HOSTS = ['.*']
 
@@ -40,7 +48,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_tornado',
-    'usethis_django_bootstrap',
+    'jquery',
+    'usethis_bootstrap',
     'core',
 )
 

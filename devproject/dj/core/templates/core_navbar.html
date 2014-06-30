@@ -1,0 +1,73 @@
+<div class="navbar navbar-default" role="navigation">
+
+{# The nice collapsed expand button for smaller screens. #}
+<div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+    </button>
+
+    <a class="navbar-brand" href="/">Django Tornado</a>
+</div>
+    <div class="navbar-collapse collapse  navbar-ex1-collapse">
+        <ul class="nav navbar-nav">
+            {% if not user.is_anonymous %}
+            <li>
+                <a href="/user/{{user.id}}"> Welcome {{ user }} </a>
+            </li>
+            {% endif %}
+
+        {% block page_body_navbar_items %}
+            <li{% if request.path == "/" %} class="active"{% endif %}>
+                <a href="/">Home</a>
+            </li>
+            <li class="dropdown active">
+                {# <a href="{% url 'eliquid-index' %}" #}
+                {#     class="dropdown-toggle" data-toggle="dropdown">Eliquid<span class="caret"></a> #}
+                {# <ul class="dropdown-menu"> #}
+                {#     <li{% if request.path == "/eliquid/recipies" %} class="active"{% endif %}> #}
+                {#         <a href="{% url 'eliquid-recipies' %} ">Recipies</a> #}
+                {#     </li> #}
+                {#     <li{% if request.path == "/eliquid/flavor/recipies" %} class="active"{% endif %}> #}
+                {#         <a href="{% url 'eliquid-flavor-recipies' %} ">Flavor Recipies</a> #}
+                {#     </li> #}
+                {#     <li{% if request.path == "/eliquid/flavor" %} class="active"{% endif %}> #}
+                {#         <a href="{% url 'eliquid-flavor' %} ">Flavors</a> #}
+                {#     </li> #}
+                {# </ul> #}
+            </li>
+            {# <li{% if request.path|slice:":9" == "/products" %} class="active"{% endif %}> #}
+            {#     <a href="/products/">Products</a> #}
+            {# </li> #}
+        {% endblock %}{# page_body_navbar_items #}
+        </ul>
+
+        <ul class="nav navbar-nav navbar-right top-navbar-right">
+
+            {% if user.is_anonymous %}
+            <form action="{% url 'django.contrib.auth.views.login' %}" method="POST"
+                class="navbar-form navbar-right" accept-charset="utf-8"> {% csrf_token %}
+                <div class="form-group">
+                    {# {{ login_form.username.label_tag }} #}
+                    {{ login_form.username }}
+                </div>
+                <div class="form-group">
+                    {# {{ login_form.password.label_tag }} #}
+                    {{ login_form.password }}
+                </div>
+                <button class="btn btn-success">
+                    Sign In
+                </button>
+                <input type="hidden" name="next" value="{{ next }}" />
+            </form>
+            {% else %}
+            <div class="navbar-right">
+                <a href="/logout/" class="btn btn-success">Logout</a>
+            </div>
+            {% include "bootstrap_theme_dropdown.html" %}
+            {% endif %}
+        </ul>
+
+    </div><!--/.navbar-collapse -->
+</div> {# Top most nav #}
