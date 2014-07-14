@@ -3,3 +3,6 @@
 *.pyc
 dist/
 sdist/
+tags
+build/
+django_tornado.egg-info/
