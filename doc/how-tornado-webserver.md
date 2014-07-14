@@ -49,3 +49,19 @@ Runs the proper callback, in this case it's `_on_headers()` from an instance of:
 Parse the headers and create an `HttpRequest` object.  
 Then the client code's request callback is called and passed the new request
 object as a parameter.
+
+
+### Django Request `get_response()`
+
+This is where the request and response meet.  
+
+In short:
+
+1. Middleware is called on the request
+2. Map the URL to a view and extract view arguments
+3. Middleware is called on the request and view
+4. Render the response to a template if appropriate
+5. The view is called and passed the request and any additional arguments
+6. Middleware is called on the response
+7. The response is returned
+

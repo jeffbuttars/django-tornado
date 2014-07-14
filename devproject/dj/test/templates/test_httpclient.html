@@ -1,0 +1,29 @@
+{% extends "core_base.html" %}
+
+{% block page_style_links %}
+    {{ block.super }}
+{% endblock %}{# page_style_links #}
+
+{% block page_body_container_inner %}
+{% block page_body_center_row %}
+
+<div class="row">
+    <div class="col-md-8">
+        <h1>HTTP Client Tests</h1>
+    </div>
+    <div class="col-md-4">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-10">
+        <p>
+        Run some simple tests based on HTTP client requests. You can run a synchronous test
+        and an asynchronous and compare the results.
+        </p>
+    </div>
+</div>
+
+{% endblock %} {# page_body_center_row #}
+{% endblock %}
+

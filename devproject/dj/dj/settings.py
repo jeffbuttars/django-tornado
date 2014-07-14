@@ -33,16 +33,16 @@ TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + (
     'usethis_bootstrap.context_processor.bootstrap_urls',
 )
 
+
+LOGIN_REDIRECT_URL = "/"
 ALLOWED_HOSTS = ['.*']
 
-
 # Application definition
-
 INSTALLED_APPS = (
+    'django.contrib.auth',
     'django_admin_bootstrapped.bootstrap3',
     'django_admin_bootstrapped',
     'django.contrib.admin',
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -51,6 +51,7 @@ INSTALLED_APPS = (
     'jquery',
     'usethis_bootstrap',
     'core',
+    'test',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -63,9 +64,7 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'dj.urls'
-
 WSGI_APPLICATION = 'dj.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
