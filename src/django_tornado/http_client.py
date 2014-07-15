@@ -5,7 +5,6 @@ import tornado
 import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPClient as SyncHttpClient
 from tornado.httputil import url_concat
-# from urllib.parse import urlencode
 
 
 """

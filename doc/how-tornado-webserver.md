@@ -65,3 +65,7 @@ In short:
 6. Middleware is called on the response
 7. The response is returned
 
+## Asynchronous responses
+
+Normally, Django returns it's own response object. If we wrap a method with Tornado's
+get.coroutine a `TracebackFuture` object instance instead.

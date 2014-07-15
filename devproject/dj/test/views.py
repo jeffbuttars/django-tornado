@@ -1,7 +1,8 @@
+from tornado import gen
+from django_tornado.http_client import HttpClient
 from django.views.generic import TemplateView
 from core.views import BaseTemplateView
 
-from tornado import gen
 
 class Index(BaseTemplateView):
     pass
@@ -30,9 +31,17 @@ class AsyncHttpClient(BaseTemplateView):
         :return:
         :rtype:
         """
-        ctx = self.base_data()
-        ctx['treq'] = request.tornado_request
 
-        return super(BaseTemplateView, self).get(request, **ctx)
+        # Go and grab a web page, asynchronously
+        http_client = HttpClient()
+        res = yield http_client.get('http://google.com')
+        print "WEB RESPONSE:" + dir(res)
+
+        # ctx = self.base_data(
+        #     web_result=res,
+        #     treq=request.tornado_request,
+        # )
+
+        # yield super(BaseTemplateView, self).get(request, **ctx)
     # get()
 # HttpClient

@@ -3,9 +3,9 @@ from django.views.generic import TemplateView
 class BaseTemplateView(TemplateView):
     template_name = "core_index.html"
 
-    def base_data(self, data={}):
+    def base_data(self, **kwargs):
         bdata = {}
-        bdata.update(data)
+        bdata.update(kwargs)
 
         return bdata
     # base_data()

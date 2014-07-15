@@ -3,16 +3,13 @@ import logging
 logger = logging.getLogger('django.debug')
 
 import sys
-# import platform
 import cgi
 import codecs
 import warnings
 from io import BytesIO
-# import time
-# import datetime
 
-# from tornado.escape import utf8
-# from tornado import httputil
+from tornado.concurrent import TracebackFuture
+
 
 from django import http
 from django.core import signals
@@ -21,6 +18,7 @@ from django.core import urlresolvers
 from django.core.handlers import base
 from django.utils import datastructures
 from django.utils.functional import cached_property
+from django.http.response import HttpResponse
 from django.core.urlresolvers import set_script_prefix
 from django.core.exceptions import MiddlewareNotUsed, PermissionDenied, SuspiciousOperation
 try:
@@ -237,6 +235,7 @@ class TornadoHandler(base.BaseHandler):
         """
         logger.debug("TornadoHandler __call__ %s", t_req)
         self.tornado_request = t_req
+        self.tornado_future = None
 
         self.urlconf = settings.ROOT_URLCONF
         self.resolver = urlresolvers.RegexURLResolver(r'^/', self.urlconf)
@@ -308,6 +307,13 @@ class TornadoHandler(base.BaseHandler):
             self.callback, self.callback_args, self.callback_kwargs = resolver_match
             request.resolver_match = resolver_match
 
+        if isinstance(response, TracebackFuture):
+            logger.debug("TracebackFuture: %s", dir(response))
+            # Dig out the original request.
+            raise Exception("Holly Smokes!")
+
+        logger.debug("_apply_request_middleware returning: %s: %s",
+                     response, dir(response))
         return response
     # _apply_request_middleware()
 
@@ -406,7 +412,6 @@ class TornadoHandler(base.BaseHandler):
     def get_response(self, request):
         "Returns an HttpResponse object for the given HttpRequest"
         logger.debug("TornadoHandler get_response %s", request) 
-        # return super(TornadoHandler, self).get_response(request)
 
         resolver = self.resolver
         response = None
@@ -415,7 +420,31 @@ class TornadoHandler(base.BaseHandler):
             response = self._apply_request_middleware(request)
             response = self._apply_view_midlleware(request, response)
             response = self._call_view(request, response)
+
+            ### Handle the future
+            logger.debug("view response: %s:%s", response, dir(response))
+            if isinstance(response, TracebackFuture):
+                self.tornado_future = response
+                if not response.done():
+                    raise Exception("I'm not done!!!!")
+
+                resp = "TracebackFuture: \n%s\ndone: %s" % (
+                    dir(response),
+                    response.done(),
+                )
+                logger.debug(resp)
+
+                if response.done():
+                    if isinstance(response.result(), HttpResponse):
+                        raise Exception("It's a real response?")
+                        # Dig out the original request.
+                        response =  response.result()
+                    raise Exception("Response is done, but I don't know what it is")
+                else:
+                    raise Exception(resp)
+
             response = self._render_template(request, response)
+
         except http.Http404 as e:
             logger.warning('Not Found: %s', request.path,
                         extra={
