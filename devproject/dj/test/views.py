@@ -9,12 +9,12 @@ class Index(BaseTemplateView):
 # Index
 
 
-class HttpClient(BaseTemplateView):
+class TestHttpClient(BaseTemplateView):
     pass
-# HttpClient
+# TestHttpClient
 
 
-class AsyncHttpClient(BaseTemplateView):
+class TestAsyncHttpClient(BaseTemplateView):
 
     template_name = "test_async_httpclient.html"
 
@@ -35,13 +35,13 @@ class AsyncHttpClient(BaseTemplateView):
         # Go and grab a web page, asynchronously
         http_client = HttpClient()
         res = yield http_client.get('http://google.com')
-        print "WEB RESPONSE:" + dir(res)
+        raise Exception(res)
 
-        # ctx = self.base_data(
-        #     web_result=res,
-        #     treq=request.tornado_request,
-        # )
+        ctx = self.base_data(
+            web_result=res,
+            treq=request.tornado_request,
+        )
 
-        # yield super(BaseTemplateView, self).get(request, **ctx)
+        gen.Return(super(AsyncHttpClient, self).get(request, **ctx))
     # get()
-# HttpClient
+# TestAsyncHttpClient

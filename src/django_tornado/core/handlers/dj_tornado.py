@@ -120,17 +120,16 @@ class TornadoRequest(http.HttpRequest):
         self.META = t_headers
         logger.debug("TornadoRequest::__init__ setting META %s", self.META)
 
+        self.method = t_req.method.upper()
         self.META['PATH_INFO'] = path_info
         self.META['SCRIPT_NAME'] = script_name
         host_parts = t_req.host.rsplit(':', 1)
         self.META['SERVER_NAME'] = host_parts[0]
         self.META['SERVER_PORT'] = host_parts[1]
-
-        # self.method = self.META['REQUEST_METHOD'].upper()
-        self.META['REQUEST_METHOD'] = 'REQUEST_' + t_req.protocol.upper()
+        # self.META['REQUEST_METHOD'] = 'REQUEST_' + t_req.protocol.upper()
+        self.META['REQUEST_METHOD'] = self.method
         logger.debug("TornadoRequest::__init__  META set %s", self.META)
 
-        self.method = t_req.method
         # logger.debug("TornadoRequest::__init__  method %s", self.method)
         # if self.method not in ('GET', 'POST'):
         #     raise Exception("Fix METHOD header stuff!!!!!!")

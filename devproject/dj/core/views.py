@@ -10,8 +10,8 @@ class BaseTemplateView(TemplateView):
         return bdata
     # base_data()
 
-    def get(self, req):
-        return super(BaseTemplateView, self).get(req, **self.base_data())
+    def get(self, req, **kwargs):
+        return super(BaseTemplateView, self).get(req, **self.base_data(**kwargs))
     # get()
 # BaseTemplateView
 
