@@ -128,13 +128,8 @@ class TornadoRequest(http.HttpRequest):
         host_parts = t_req.host.rsplit(':', 1)
         self.META['SERVER_NAME'] = host_parts[0]
         self.META['SERVER_PORT'] = host_parts[1]
-        # self.META['REQUEST_METHOD'] = 'REQUEST_' + t_req.protocol.upper()
         self.META['REQUEST_METHOD'] = self.method
         logger.debug("TornadoRequest::__init__  META set %s", self.META)
-
-        # logger.debug("TornadoRequest::__init__  method %s", self.method)
-        # if self.method not in ('GET', 'POST'):
-        #     raise Exception("Fix METHOD header stuff!!!!!!")
 
         _, content_params = cgi.parse_header(t_headers.get('CONTENT_TYPE', ''))
         if 'charset' in content_params:
@@ -152,7 +147,6 @@ class TornadoRequest(http.HttpRequest):
             content_length = 0
 
         self._stream = LimitedStream(t_req.body, content_length)
-        # self._body = t_req.body
         self._read_started = False
         self.resolver_match = None
     # __init__()
@@ -203,7 +197,6 @@ class TornadoRequest(http.HttpRequest):
         You'll need to call this if the view function/method is a coroutine.
         """
         logger.debug("TornadoRequest::render")
-        # self._view_async_response = response
         response = self._handler.finish_response(self, response)
         logger.debug("response: Finished")
     # render()
@@ -223,7 +216,6 @@ class TornadoRequest(http.HttpRequest):
     # finish()
 
     POST = property(_get_post, _set_post)
-    # POST = self.tornado_request.body_arguments
     FILES = property(_get_files)
     REQUEST = property(_get_request)
 # TornadoRequest
@@ -526,11 +518,6 @@ class TornadoHandler(base.BaseHandler):
             response = self._apply_view_midlleware(request, response)
             response = self._call_view(request, response)
 
-            # ### Handle the future
-            # logger.debug("view response: %s:%s", response, dir(response))
-            # if isinstance(response, TracebackFuture):
-            #     logger.debug("response is TracebackFuture, return it")
-            #     return response
         except Exception as e:
             return self._handle_response_exception(request, response, e)
 
@@ -573,95 +560,15 @@ class TornadoHandler(base.BaseHandler):
 
         response = self.start_response(request)
 
-        # ### Handle the future
+        # ### Handle the Future
+        # Always return Futures back the IOLoop without further processing.
         if isinstance(response, TracebackFuture):
             logger.debug("response is TracebackFuture, return it")
             return response
 
+        # Not a future, finish Django response processing
+        # and return it
         return self.finish_response(request, response)
-
-        ##############################################################
-
-        # resolver = self.resolver
-        # response = None
-
-        # try:
-        #     response = self._apply_request_middleware(request)
-        #     response = self._apply_view_midlleware(request, response)
-        #     response = self._call_view(request, response)
-
-        #     ### Handle the future
-        #     logger.debug("view response: %s:%s", response, dir(response))
-        #     if isinstance(response, TracebackFuture):
-        #         logger.debug("response is TracebackFuture, return it")
-        #         return response
-
-        #     response = self._render_template(request, response)
-
-        # except http.Http404 as e:
-        #     logger.warning('Not Found: %s', request.path,
-        #                 extra={
-        #                     'status_code': 404,
-        #                     'request': request
-        #                 })
-        #     if settings.DEBUG:
-        #         response = debug.technical_404_response(request, e)
-        #     else:
-        #         try:
-        #             self.callback, param_dict = resolver.resolve404()
-        #             response = self.callback(request, **param_dict)
-        #         except:
-        #             signals.got_request_exception.send(sender=self.__class__, request=request)
-        #             response = self.handle_uncaught_exception(request, resolver, sys.exc_info())
-
-        # except PermissionDenied:
-        #     logger.warning(
-        #         'Forbidden (Permission denied): %s', request.path,
-        #         extra={
-        #             'status_code': 403,
-        #             'request': request
-        #         })
-        #     try:
-        #         self.callback, param_dict = resolver.resolve403()
-        #         response = self.callback(request, **param_dict)
-        #     except:
-        #         signals.got_request_exception.send(
-        #                 sender=self.__class__, request=request)
-        #         response = self.handle_uncaught_exception(request,
-        #                 resolver, sys.exc_info())
-
-        # except SuspiciousOperation as e:
-        #     # The request logger receives events for any problematic request
-        #     # The security logger receives events for all SuspiciousOperations
-        #     security_logger = logging.getLogger('django.security.%s' %
-        #                     e.__class__.__name__)
-        #     security_logger.error(force_text(e))
-
-        #     try:
-        #         self.callback, param_dict = resolver.resolve400()
-        #         response = self.callback(request, **param_dict)
-        #     except:
-        #         signals.got_request_exception.send(
-        #                 sender=self.__class__, request=request)
-        #         response = self.handle_uncaught_exception(request,
-        #                 resolver, sys.exc_info())
-
-        # except SystemExit:
-        #     # Allow sys.exit() to actually exit. See tickets #1023 and #4701
-        #     raise
-
-        # except: # Handle everything else.
-        #     # Get the exception info now, in case another exception is thrown later.
-        #     signals.got_request_exception.send(sender=self.__class__, request=request)
-        #     response = self.handle_uncaught_exception(request, resolver, sys.exc_info())
-
-        # try:
-        #     self._apply_response_middleware(request, response)
-        # except: # Any exception should be gathered and handled
-        #     signals.got_request_exception.send(sender=self.__class__, request=request)
-        #     response = self.handle_uncaught_exception(request, resolver, sys.exc_info())
-
-        # return response
     #get_response()
 
 # TornadoHandler

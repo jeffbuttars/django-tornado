@@ -1,6 +1,6 @@
 import logging
 # logger = logging.getLogger('django.request')
-logger = logging.getLogger('django.debug')
+# logger = logging.getLogger('django.debug')
 
 from django.conf import settings
 from django.http import Http404
@@ -18,7 +18,6 @@ class StaticFilesHandler(TornadoHandler):
     defined by the STATIC_URL setting, and serves those files.
     """
     def __init__(self, *args, **kwargs):
-        # self.application = application
         self.base_url = urlparse(self.get_base_url())
         super(StaticFilesHandler, self).__init__(*args, **kwargs)
 
@@ -33,7 +32,7 @@ class StaticFilesHandler(TornadoHandler):
         * the host is provided as part of the base_url
         * the request's path isn't under the media path (or equal)
         """
-        logger.debug("StaticFileHandler::_should_handle %s" % path)
+        # logger.debug("StaticFileHandler::_should_handle %s" % path)
         return path.startswith(self.base_url[2]) and not self.base_url[1]
 
     def file_path(self, url):
@@ -42,22 +41,19 @@ class StaticFilesHandler(TornadoHandler):
         """
         relative_url = url[len(self.base_url[2]):]
         return url2pathname(relative_url)
-        # pname = url2pathname(relative_url)
-        # logger.debug("StaticFileHandler::file_path %s:%s", url, pname)
-        # return pname
 
     def serve(self, request):
         """
         Actually serves the request path.
         """
-        logger.debug("StaticFileHandler::serving %s" % request.path)
+        # logger.debug("StaticFileHandler::serving %s" % request.path)
         return serve(request, self.file_path(request.path), insecure=True)
 
     def get_response(self, request):
-        logger.debug("StaticFileHandler::get_response %s", request.path)
+        # logger.debug("StaticFileHandler::get_response %s", request.path)
 
         if self._should_handle(request.path):
-            logger.debug("StaticFileHandler::get_response should_handle")
+            # logger.debug("StaticFileHandler::get_response should_handle")
             try:
                 return self.serve(request)
             except Http404 as e:
@@ -65,5 +61,5 @@ class StaticFilesHandler(TornadoHandler):
                     from django.views import debug
                     return debug.technical_404_response(request, e)
 
-        logger.debug("StaticFileHandler::get_response not should_handle")
+        # logger.debug("StaticFileHandler::get_response not should_handle")
         return super(StaticFilesHandler, self).get_response(request)

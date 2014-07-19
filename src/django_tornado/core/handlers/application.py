@@ -125,7 +125,7 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         #               "setting status tornadoHandler"))
         self.set_status(response.status_code, response.reason_phrase)
 
-        # Update the headers with the Django headers
+        # Update headers with the Django headers
         # logger.debug(("DjangoTornadoRequestHandler::django_finish_request()"
         #               "copying headers"))
 
