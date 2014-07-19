@@ -13,6 +13,7 @@ from tornado.concurrent import TracebackFuture
 
 from django import http
 from django.core import signals
+from django.views import debug
 from django.conf import settings
 from django.core import urlresolvers
 from django.core.handlers import base
@@ -195,6 +196,15 @@ class TornadoRequest(http.HttpRequest):
             self._load_post_and_files()
         return self._files
 
+    def render(self, response):
+        """
+        Render a Django response and finish up this request.
+        You'll need to call this if the view function/method is a coroutine.
+        """
+        logger.debug("response: %s", dir(response))
+        self._view_async_response = response
+    # render()
+
     def write(self, chunk):
         """
         Convenience wrapper for the Tornado request's write() method.
@@ -217,7 +227,10 @@ class TornadoRequest(http.HttpRequest):
 
 
 class TornadoHandler(base.BaseHandler):
-    """Docstring for TornadoHandler """
+    """
+    A Django Request Handler to bridge a Tornado Request into a 
+    Django Request.
+    """
 
     # WSGI locks, Ideally, we don't run threaded, just multi process. But
     # keep this here as a note for now in case this comes up later.
@@ -267,13 +280,15 @@ class TornadoHandler(base.BaseHandler):
                            )
             response = http.HttpResponseBadRequest()
         else:
+            # Send this DjangoRequest through the Django stack
+            logger.debug("process request")
             response = self.get_response(request)
 
         response._handler_class = self.__class__
 
-        print("TornadoHandler __call__ response %s" % (dir(response)))
-        print("TornadoHandler __call__ response %s" % (response))
+        # print("TornadoHandler __call__ response %s" % (response))
 
+        logger.debug("Done, returning response")
         return response
     # __call__()
 
@@ -423,24 +438,29 @@ class TornadoHandler(base.BaseHandler):
             ### Handle the future
             logger.debug("view response: %s:%s", response, dir(response))
             if isinstance(response, TracebackFuture):
-                self.tornado_future = response
-                if not response.done():
-                    raise Exception("I'm not done!!!!")
+                logger.debug("response is TracebackFuture, return it")
+                return response
+                # self.tornado_future = response
+                # # if not response.done():
+                #     # raise Exception("I'm not done!!!!")
 
-                resp = "TracebackFuture: \n%s\ndone: %s" % (
-                    dir(response),
-                    response.done(),
-                )
-                logger.debug(resp)
+                # resp = "TracebackFuture: \n%s\ndone: %s" % (
+                #     dir(response),
+                #     response.done(),
+                # )
+                # logger.debug(resp)
 
-                if response.done():
-                    if isinstance(response.result(), HttpResponse):
-                        raise Exception("It's a real response?")
-                        # Dig out the original request.
-                        response =  response.result()
-                    raise Exception("Response is done, but I don't know what it is")
-                else:
-                    raise Exception(resp)
+                # if response.done():
+                #     if isinstance(response.result(), HttpResponse):
+                #         raise Exception("It's a real response?")
+                #         # Dig out the original request.
+                #         response =  response.result()
+                #     raise Exception("Response is done, but I don't know what it is")
+                # else:
+                #     try:
+                #         raise Exception("Response is Future and not done. \n%s" % resp)
+                #     except Exception as e:
+                #         return self.handle_uncaught_exception(request, resolver, sys.exc_info())
 
             response = self._render_template(request, response)
 

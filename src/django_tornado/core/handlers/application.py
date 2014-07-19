@@ -3,6 +3,7 @@ import logging
 logger = logging.getLogger('django.debug')
 
 import tornado.web
+from tornado.concurrent import TracebackFuture
 
 from django.conf import settings
 from django.http.response import StreamingHttpResponse
@@ -12,6 +13,9 @@ from django_tornado.core.handlers.dj_tornado import TornadoHandler
 
 
 class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
+    """
+    A Tornado Request Handler for Tornado to interface with.
+    """
 
     def __init__(self, application, request, **kwargs):
         logger.debug(("DjangoTornadoRequestHandler::__init__() "
@@ -30,6 +34,39 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         if not self._finished:
             self._when_complete(self.django_handle_request(*self.path_args, **self.path_kwargs),
                                 self._execute_finish)
+    def _execute_finish(self):
+        logger.debug("DjangoTornadoRequestHandler::_execute_finish")
+        super(DjangoTornadoRequestHandler, self)._execute_finish()
+    # _execute_finish()
+
+
+    def _execute(self, transforms, *args, **kwargs):
+        logger.debug("TornadoHandler::_execute transforms:%s, args:%s, kwargs:%s",
+                    transforms, args, kwargs)
+        super(DjangoTornadoRequestHandler, self)._execute(transforms, *args, **kwargs)
+    # _execute()
+
+    def _when_complete(self, result, callback):
+        """Intercept the _when_complete calls
+        """
+        logger.debug("TornadoHandler::_when_complete")
+        super(DjangoTornadoRequestHandler, self)._when_complete(result, callback)
+    # _when_complete()
+
+    def _execute_finish(self):
+        logger.debug("TornadoHandler::_execute_finish")
+        super(DjangoTornadoRequestHandler, self)._execute_finish()
+    # _execute_finish()
+
+    def on_finish(self):
+        logger.debug("DjangoTornadoRequestHandler::on_finish")
+        pass
+    # on_finish()
+
+    def finish(self, chunk=None):
+        # logger.debug("DjangoTornadoRequestHandler::finish")
+        super(DjangoTornadoRequestHandler, self).finish(chunk)
+    # finish()
 
     def django_handle_request(self, *args, **kwargs):
         """todo: Docstring for django_handle_request
@@ -49,45 +86,61 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         # Now use the Django handler to run the request through Django
         logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
                       "calling tornadoHandler"))
-        resp = self._dj_handler(self.request)
+        initial_resp = self._dj_handler(self.request)
+
+        if isinstance(initial_resp, TracebackFuture):
+            # The request is finished being processed. Return the Future
+            # to Tornado which will handle the Future until it's completed.
+            logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
+                        "Got a future"))
+            return initial_resp
+
+        self.django_finish_request(initial_resp)
+    # django_handle_request()
+
+    def django_finish_request(self, response):
+        logger.debug("django_finish_request")
+        # Django has finished with the request and now we
+        # need to make the response friendly for Tornado
+        # and write it to the network.
 
         # Update the status with the Django staus
-        logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
-                      "setting status tornadoHandler"))
-        self.set_status(resp.status_code, resp.reason_phrase)
+        # logger.debug(("DjangoTornadoRequestHandler::django_finish_request()"
+        #               "setting status tornadoHandler"))
+        self.set_status(response.status_code, response.reason_phrase)
 
         # Update the headers with the Django headers
-        logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
-                      "copying headers"))
+        # logger.debug(("DjangoTornadoRequestHandler::django_finish_request()"
+        #               "copying headers"))
 
-        for k, v in resp.items():
-            logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
-                          "setting header %s: %s") % (k, v))
+        for k, v in response.items():
+            # logger.debug(("DjangoTornadoRequestHandler::django_finish_request()"
+            #               "setting header %s: %s") % (k, v))
             self.set_header(str(k), str(v))
-        # end for k, v in resp.items
+        # end for k, v in response.items
 
         # Write the Django response's cookies to the tornado response
         # headers
-        for c in resp.cookies.values():
-            logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
-                        "adding COOKIE %s", c))
+        for c in response.cookies.values():
+            # logger.debug(("DjangoTornadoRequestHandler::django_finish_request()"
+            #             "adding COOKIE %s", c))
             self.add_header(
                 str('Set-Cookie'), str(c.output(header=''))
             )
 
         # Write the Django generated content
-        logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
-                      "writing content"))
+        # logger.debug(("DjangoTornadoRequestHandler::django_finish_request()"
+        #               "writing content"))
 
         try:
-            self.write(resp.content)
+            self.write(response.content)
         except AttributeError:
-            for cont in resp.streaming_content:
+            for cont in response.streaming_content:
                 self.write(cont)
-            # end for cont in resp
+            # end for cont in response
 
         self.finish()
-    # django_handle_request()
+    # django_finish_request()
 # DjangoTornadoRequestHandler
 
 

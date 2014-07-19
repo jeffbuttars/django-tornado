@@ -3,6 +3,9 @@ from django_tornado.http_client import HttpClient
 from django.views.generic import TemplateView
 from core.views import BaseTemplateView
 
+import logging
+logger = logging.getLogger('django.debug')
+
 
 class Index(BaseTemplateView):
     pass
@@ -21,7 +24,7 @@ class TestAsyncHttpClient(BaseTemplateView):
     @gen.coroutine
     def get(self, request, *args, **kwargs):
         """todo: Docstring for get
-        
+
         :param request: arg description
         :type request: type description
         :param *args: arg description
@@ -31,17 +34,23 @@ class TestAsyncHttpClient(BaseTemplateView):
         :return:
         :rtype:
         """
+        logger.debug("Start VIEW")
 
         # Go and grab a web page, asynchronously
         http_client = HttpClient()
+        logger.debug("YIELD VIEW, self:%s" % (self,))
         res = yield http_client.get('http://google.com')
-        raise Exception(res)
+        logger.debug("AFTER YIELD self:%s" % (self,))
+
+        logger.debug("http client result:\n%s\n", res)
 
         ctx = self.base_data(
             web_result=res,
             treq=request.tornado_request,
         )
 
-        gen.Return(super(AsyncHttpClient, self).get(request, **ctx))
+        myres = super(TestAsyncHttpClient, self).get(request, **ctx)
+        logger.debug("Done with view, returning Django response")
+        request.render(myres)
     # get()
 # TestAsyncHttpClient
