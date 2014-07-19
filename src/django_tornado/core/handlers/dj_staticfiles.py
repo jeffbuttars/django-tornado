@@ -3,6 +3,7 @@ import logging
 logger = logging.getLogger('django.debug')
 
 from django.conf import settings
+from django.http import Http404
 from django_tornado.core.handlers.dj_tornado import TornadoHandler
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import url2pathname
@@ -53,8 +54,7 @@ class StaticFilesHandler(TornadoHandler):
         return serve(request, self.file_path(request.path), insecure=True)
 
     def get_response(self, request):
-        from django.http import Http404
-        logger.debug("StaticFileHandler::get_response %s" % request.path)
+        logger.debug("StaticFileHandler::get_response %s", request.path)
 
         if self._should_handle(request.path):
             logger.debug("StaticFileHandler::get_response should_handle")

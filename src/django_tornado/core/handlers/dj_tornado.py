@@ -249,8 +249,7 @@ class TornadoHandler(base.BaseHandler):
         super(TornadoHandler, self).__init__()
         self._tornado_request_handler = t_request_handler
 
-        # self._response_started = False
-        # self._response_finished = False
+        self._response_finished = False
     # __init__()
 
     def __call__(self, t_req, on_finish=None):
@@ -265,7 +264,6 @@ class TornadoHandler(base.BaseHandler):
         self._when_finished = on_finish
         self.tornado_request = t_req
         self.tornado_future = None
-        self._request_finished = False
 
         self.urlconf = settings.ROOT_URLCONF
         self.resolver = urlresolvers.RegexURLResolver(r'^/', self.urlconf)
@@ -302,8 +300,8 @@ class TornadoHandler(base.BaseHandler):
             logger.debug("process request")
             response = self.get_response(request)
 
-        logger.debug("Done, returning response")
-        if not self._request_finished:
+        # logger.debug("Done, returning response, _response_finished: %s", self._response_finished)
+        if not self._response_finished:
             return response
     # __call__()
 
@@ -564,13 +562,14 @@ class TornadoHandler(base.BaseHandler):
 
         self._tornado_request_handler.django_finish_request(response)
 
-        self._request_finished = True
+        self._response_finished = True
         return response
     # finish_response()
 
     def get_response(self, request):
         "Returns an HttpResponse object for the given HttpRequest"
-        logger.debug("TornadoHandler get_response %s", request) 
+        # logger.debug("TornadoHandler get_response %s", request)
+        logger.debug("TornadoHandler get_response ")
 
         response = self.start_response(request)
 

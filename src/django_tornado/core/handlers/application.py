@@ -36,39 +36,39 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         if not self._finished:
             self._when_complete(self.django_handle_request(*self.path_args, **self.path_kwargs),
                                 self._execute_finish)
-    def _execute_finish(self):
-        logger.debug("DjangoTornadoRequestHandler::_execute_finish")
-        super(DjangoTornadoRequestHandler, self)._execute_finish()
-    # _execute_finish()
+    # def _execute_finish(self):
+    #     logger.debug("DjangoTornadoRequestHandler::_execute_finish")
+    #     super(DjangoTornadoRequestHandler, self)._execute_finish()
+    # # _execute_finish()
 
 
-    def _execute(self, transforms, *args, **kwargs):
-        logger.debug("DjangoTornadoRequestHandler::_execute transforms:%s, args:%s, kwargs:%s",
-                    transforms, args, kwargs)
-        super(DjangoTornadoRequestHandler, self)._execute(transforms, *args, **kwargs)
-    # _execute()
+    # def _execute(self, transforms, *args, **kwargs):
+    #     logger.debug("DjangoTornadoRequestHandler::_execute transforms:%s, args:%s, kwargs:%s",
+    #                 transforms, args, kwargs)
+    #     super(DjangoTornadoRequestHandler, self)._execute(transforms, *args, **kwargs)
+    # # _execute()
 
-    def _when_complete(self, result, callback):
-        """Intercept the _when_complete calls
-        """
-        logger.debug("DjangoTornadoRequestHandler::_when_complete")
-        super(DjangoTornadoRequestHandler, self)._when_complete(result, callback)
-    # _when_complete()
+    # def _when_complete(self, result, callback):
+    #     """Intercept the _when_complete calls
+    #     """
+    #     logger.debug("DjangoTornadoRequestHandler::_when_complete")
+    #     super(DjangoTornadoRequestHandler, self)._when_complete(result, callback)
+    # # _when_complete()
 
-    def _execute_finish(self):
-        logger.debug("DjangoTornadoRequestHandler::_execute_finish")
-        super(DjangoTornadoRequestHandler, self)._execute_finish()
-    # _execute_finish()
+    # def _execute_finish(self):
+    #     logger.debug("DjangoTornadoRequestHandler::_execute_finish")
+    #     super(DjangoTornadoRequestHandler, self)._execute_finish()
+    # # _execute_finish()
 
-    def on_finish(self):
-        logger.debug("DjangoTornadoRequestHandler::on_finish")
-        pass
-    # on_finish()
+    # def on_finish(self):
+    #     logger.debug("DjangoTornadoRequestHandler::on_finish")
+    #     pass
+    # # on_finish()
 
-    def finish(self, chunk=None):
-        logger.debug("DjangoTornadoRequestHandler::finish")
-        super(DjangoTornadoRequestHandler, self).finish(chunk)
-    # finish()
+    # def finish(self, chunk=None):
+    #     logger.debug("DjangoTornadoRequestHandler::finish")
+    #     super(DjangoTornadoRequestHandler, self).finish(chunk)
+    # # finish()
 
     def django_handle_request(self, *args, **kwargs):
         """todo: Docstring for django_handle_request
@@ -88,19 +88,22 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         # Now use the Django handler to run the request through Django
         logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
                       "calling tornadoHandler"))
-        initial_resp = self._dj_handler(self.request, self.django_finish_request)
+        response = self._dj_handler(self.request, self.django_finish_request)
 
-        if isinstance(initial_resp, TracebackFuture):
+        if isinstance(response, TracebackFuture):
             # The request is finished being processed. Return the Future
             # to Tornado which will handle the Future until it's completed.
             logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
                         "Got a future"))
-            return initial_resp
+            return response
 
-        # The _dj_handler will call django_finish_request when it's finished.
+        # The _dj_handler will call django_finish_request if it finishes before
+        # we return back to here..
         # Right now we're using callbacks, we should look into replacing those
         # with Futures.
-        # self.django_finish_request(initial_resp)
+        logger.debug(("DjangoTornadoRequestHandler::django_handle_request()"
+                      "has a response: %s"), response is not None)
+        self.django_finish_request(response)
     # django_handle_request()
 
     def django_finish_request(self, response):
@@ -108,6 +111,12 @@ class DjangoTornadoRequestHandler(tornado.web.RequestHandler):
         # Django has finished with the request and now we
         # need to make the response friendly for Tornado
         # and write it to the network.
+
+        if not response:
+            logger.debug(
+                "DjangoTornadoRequestHandler::django_finish_request no response to process")
+            self.request.finish()
+            return
 
         response._handler_class = self._dj_handler_class
 
