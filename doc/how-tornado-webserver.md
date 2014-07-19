@@ -18,6 +18,30 @@ It calls `request.write` to write data to the output stream.
 When `request.finished` is called the response is done and will be closed.
 
 ## Request Stack
+
+The `run_tornado` command creates an instance of `DjangoApplication` and gives it configuration
+data from the command line. An instance of `tornado.httpserver.HTTPServer` is created with the 
+`DjangoApplication` instance.
+
+The `DjangoApplication` instance registers one handler, the `DjangoTornadoRequestHandler` class.
+`DjangoTornadoRequestHandler` is of type `tornado.web.RequestHandler`. Upon instantiation 
+`DjangoTornadoRequestHandler` will select a handler that will be used to convert Tornado requests
+into Django requests. `TornadoHandler` is the Django handler that will convert Tornado requests
+into Django requests and `StaticFileHandler` is a sub class of `TornadoHandler` that can serve up 
+static files Django style.
+
+`DjangoTornadoRequestHandler` overrides the `_execute_method` method so that all requests are handled 
+by `DjangoTornadoRequestHandler`'s `django_handle_request` method.
+
+`django_handle_request` calls the `TornadoHandler` instance with a Tornado request instance and the
+callback `django_handle_request` which is a method of `DjangoTornadoRequestHandler`.
+
+`TornadoHandler` converts the Tornado request into a Django request instance, loads the Django middleware
+and other house keeping. Then `TornadoHandler.get_response` is called with the new Django request instance.
+When `TornadoHandler.get_response` finishes it returns a Django response instance.
+
+
+
 Let's trace the stack of an incoming HTTP request from a browser through tornado
 
 `BaseIOStream::_handle_events(callback, fd, events)`
