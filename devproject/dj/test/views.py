@@ -1,3 +1,4 @@
+import datetime
 from tornado import gen
 from django_tornado.http_client import HttpClient
 from django.views.generic import TemplateView
@@ -20,9 +21,10 @@ class TestHttpClient(BaseTemplateView):
 class TestAsyncHttpClient(BaseTemplateView):
 
     template_name = "test_async_httpclient.html"
+    num_client_options = (1, 5, 10, 25, 50, 100)
 
     @gen.coroutine
-    def get(self, request, *args, **kwargs):
+    def get(self, request):
         """todo: Docstring for get
 
         :param request: arg description
@@ -35,17 +37,38 @@ class TestAsyncHttpClient(BaseTemplateView):
         :rtype:
         """
         logger.debug("Start VIEW")
+        num = int(request.GET.get('num_clients', 10))
 
-        # Go and grab a web page, asynchronously
+        # Go and grab some web pages, asynchronously
         http_client = HttpClient()
-        logger.debug("YIELD VIEW, self:%s" % (self,))
-        res = yield http_client.get('http://google.com')
-        logger.debug("AFTER YIELD self:%s" % (self,))
 
-        logger.debug("http client result:\n%s\n", res)
+        start_time = datetime.datetime.now()
+        res = yield [http_client.get('http://yahoo.com') for x in xrange(num)]
+        finish_time = datetime.datetime.now()
 
+        web_results = []
+        sync_total_time = 0
+        for wr in res:
+            web_results.append({
+                'response': wr,
+                'request': wr.request,
+                'request_time': wr.request_time,
+            })
+            sync_total_time += wr.request_time
+        # end for wr in res
+
+        total_time = (finish_time - start_time).total_seconds()
+        speedup = sync_total_time - total_time
         ctx = self.base_data(
-            web_result=res,
+            web_results=web_results,
+            num_clients=num,
+            start_time=start_time,
+            finish_time=finish_time,
+            total_time=total_time,
+            sync_total_time=sync_total_time,
+            speedup=speedup,
+            speedup_percent=(speedup / total_time) * 100,
+            num_client_options=self.num_client_options,
             treq=request.tornado_request,
         )
 

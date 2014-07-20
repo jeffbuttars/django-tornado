@@ -39,6 +39,10 @@
                          class="active"{% endif %}>
                         <a href="{% url 'dj_test_async_httpclient' %} ">Async HTTP Client</a>
                     </li>
+                    {# <li{% if request.path|slice:"23" == "/test/asynchttpclients/" %} #}
+                    {#      class="active"{% endif %}> #}
+                    {#     <a href="{% url 'dj_test_async_httpclients' %} ">Async HTTP Clients</a> #}
+                    {# </li> #}
                 </ul>
             </li>
         {% endblock %}{# page_body_navbar_items #}
