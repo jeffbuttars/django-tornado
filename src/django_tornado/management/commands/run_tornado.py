@@ -8,7 +8,7 @@ import tornado.wsgi
 from django.conf import settings
 # import django.core.handlers.wsgi
 from django.core.management.base import BaseCommand
-from django_tornado.core.handlers.application import DjangoApplication
+from django_tornado.core.application import DjangoApplication
 
 
 # We monkey patch the built in run with our own Tornado based version
