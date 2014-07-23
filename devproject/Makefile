@@ -1,6 +1,6 @@
 
-# SERVER_IP = localhost:8000
-SERVER_IP = 172.18.61.66:8000
+SERVER_IP = localhost:8000
+# SERVER_IP = 172.18.61.66:8000
 # Re-install django-tornado
 .PHONY: reset
 reset:

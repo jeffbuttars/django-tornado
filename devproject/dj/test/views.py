@@ -43,7 +43,11 @@ class TestAsyncHttpClient(BaseTemplateView):
         http_client = HttpClient()
 
         start_time = datetime.datetime.now()
-        res = yield [http_client.get('http://yahoo.com') for x in xrange(num)]
+        client_kwargs = {
+            'connect_timeout': 60.0,
+            'request_timeout': 60.0,
+        }
+        res = yield [http_client.get('http://yahoo.com', **client_kwargs) for x in xrange(num)]
         finish_time = datetime.datetime.now()
 
         web_results = []
